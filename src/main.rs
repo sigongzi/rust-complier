@@ -1,6 +1,7 @@
 // cargo run -- -koopa hello.c -o hello.koopa
 mod ast;
 mod irgen;
+mod codegen;
 mod commandarg;
 
 use koopa::back::KoopaGenerator;
@@ -24,7 +25,8 @@ pub enum MainError {
     File(io::Error),
     // may add parse error here
     Parse,
-    Generate(irgen::IRError),
+    IR(irgen::IRError),
+    CodeGen(codegen::GenerateError),
     Io(io::Error),
 }
 
@@ -62,7 +64,7 @@ fn try_main() -> Result<(), MainError> {
     println!("{:#?}", comp_unit);
     
     // 2. ir generator
-    let program = irgen::generate_program(&comp_unit).map_err(MainError::Generate)?;
+    let program = irgen::generate_program(&comp_unit).map_err(MainError::IR)?;
 
 
     // 输出生成的ir（用来调试）
@@ -70,12 +72,14 @@ fn try_main() -> Result<(), MainError> {
 
     // If mode is koopa, generate koopa in the target file
     if matches!(mode, Mode::Koopa) {
-        return KoopaGenerator::from_path(output_file)
+        return KoopaGenerator::from_path(&output_file)
           .map_err(MainError::File)?
           .generate_on(&program)
           .map_err(MainError::Io);
     }
     
+    // 3. generate RISC-V assembly
+    codegen::generate_asm(&program, &output_file).map_err(MainError::CodeGen)?;
     Ok(())
 }
 
@@ -86,7 +90,8 @@ impl fmt::Display for MainError {
 compiler <MODE>[-koopa,-riscv,-perf] <INPUT> -o <OUTPUT>\n"),
         Self::File(err) => write!(f, "invalid input SysY file: {}", err),
         Self::Parse => write!(f, "error occurred while parsing"),
-        Self::Generate(err) => write!(f, "{}", err),
+        Self::IR(err) => write!(f, "{}", err),
+        Self::CodeGen(err) => write!(f,"{}", err),
         Self::Io(err) => write!(f, "I/O error: {}", err),
         }
     }
