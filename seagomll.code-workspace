@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"name": "seagomll",
+			"path": "."
+		}
+	],
+	"settings": {
+		"rust-analyzer.checkOnSave": false
+	}
+}
