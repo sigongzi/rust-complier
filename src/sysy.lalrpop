@@ -31,22 +31,91 @@ Stmt: Stmt = "return" <exp: Exp> ";" => Stmt { <> };
 
 Number: i32 = <num: IntConst> => <>;
 
-Exp: Exp = <unary: UnaryExp> => Exp { <> };
+Exp: Exp = <lor: LOrExp> => Exp { <> };
 
+// 单表达式（数字）或括号
 PrimaryExp: PrimaryExp = {
-  "(" <Exp> ")" => PrimaryExp::Exp(Box::new(<>)),
+  "(" <Exp> ")" => PrimaryExp::Ausdruck(Box::new(<>)),
   Number => PrimaryExp::Number(<>),
 }
 
+// 单元表达式
 UnaryExp: UnaryExp = {
-  PrimaryExp => UnaryExp::Primary(<>),
-  <op: UnaryOp> <exp: UnaryExp> => UnaryExp::Unary(op, Box::new(exp)),
+  PrimaryExp => UnaryExp::PrimaryAusdruck(<>),
+  <op: UnaryOp> <exp: UnaryExp> => UnaryExp::UnaryAusdruck(op, Box::new(exp)),
 }
 
+// 二元表达式
+MulExp: MulExp = {
+  UnaryExp => MulExp::UnaryAusdruck(<>),
+  <lhs : MulExp> <op : MulOp> <rhs : UnaryExp> => 
+    MulExp::MulAusdruck(Box::new(lhs), op, rhs) 
+}
+
+AddExp: AddExp = {
+  MulExp => AddExp::MulAusdruck(<>),
+  <lhs: AddExp> <op : AddOp> <rhs : MulExp> => 
+    AddExp::AddAusdruck(Box::new(lhs), op, rhs)
+}
+
+RelExp: RelExp = {
+  AddExp => RelExp::AddAusdruck(<>),
+  <lhs: RelExp> <op : RelOp> <rhs : AddExp> =>
+    RelExp::RelAusdruck(Box::new(lhs), op, rhs)
+}
+
+EqExp: EqExp = {
+  RelExp => EqExp::RelAusdruck(<>),
+  <lhs: EqExp> <op: EqOp> <rhs: RelExp> =>
+    EqExp::EqAusdruck(Box::new(lhs), op, rhs)
+}
+
+// 逻辑表达式
+LAndExp: LAndExp = {
+  EqExp => LAndExp::EqAusdruck(<>),
+  <lhs: LAndExp> "&&" <rhs: EqExp> =>
+    LAndExp::LAndAusdruck(Box::new(lhs), rhs)
+}
+
+LOrExp: LOrExp = {
+  LAndExp => LOrExp::LAndAusdruck(<>),
+  <lhs: LOrExp> "||" <rhs: LAndExp> =>
+    LOrExp::LOrAusdruck(Box::new(lhs), rhs)
+}
+
+// Operator 优先级由高到低
+// 一元操作
 UnaryOp: UnaryOp = {
   "-" => UnaryOp::Negative,
   "!" => UnaryOp::LNot,
   "+" => UnaryOp::Positive
+}
+
+// * / %
+MulOp : MulOp = {
+  "*" => MulOp::Mul,
+  "/" => MulOp::Div,
+  "%" => MulOp::Mod
+}
+
+// 加法
+AddOp : AddOp = {
+  "+" => AddOp::Add,
+  "-" => AddOp::Sub
+}
+
+// 关系
+RelOp : RelOp = {
+  "<" => RelOp::Lt,
+  ">" => RelOp::Gt,
+  "<=" => RelOp::Le,
+  ">=" => RelOp::Ge
+}
+
+// 相等
+EqOp : EqOp = {
+  "==" => EqOp::Eq,
+  "!=" => EqOp::NotEq
 }
 
 // 如果匹配到标识符, 就返回这个字符串

@@ -4,7 +4,7 @@ mod context;
 
 use crate::ast::CompUnit;
 use gen::GenerateIR;
-use koopa::ir::{Program};
+use koopa::ir::Program;
 use std::fmt;
 
 use self::context::Context;

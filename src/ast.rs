@@ -1,13 +1,13 @@
 
 // AST for CompUnit
-// CompUnit  ::= FuncDef;
+/// CompUnit  ::= FuncDef;
 #[derive(Debug)]
 pub struct CompUnit {
     pub func_def: FuncDef,
 }
 
 
-// FuncDef   ::= FuncType IDENT "(" ")" Block;
+/// FuncDef   ::= FuncType IDENT "(" ")" Block;
 #[derive(Debug)]
 pub struct FuncDef {
     pub func_type: FuncType,
@@ -17,53 +17,128 @@ pub struct FuncDef {
 }
 
 
-// FuncType  ::= "int";
+/// FuncType  ::= "int";
 #[derive(Debug)]
 pub enum FuncType {
     Int
 }
 
-// Block     ::= "{" Stmt "}";
+/// Block     ::= "{" Stmt "}";
 #[derive(Debug)]
 pub struct Block {
     pub stmt: Stmt
 }
 
 
-// Stmt ::= "return" <Exp> ";";
+/// Stmt ::= "return" <Exp> ";";
 #[derive(Debug)] 
 pub struct Stmt {
     pub exp : Exp
 }
 
+/// Number    ::= INT_CONST;
+type Number = i32;
 
-// Exp ::= UnaryExp
+/// Expression
+/// Exp ::= LOrExp
 #[derive(Debug)]
 pub struct Exp {
-    pub unary : UnaryExp
+    pub lor : LOrExp
 }
 
 
-// PrimaryExp  ::= "(" Exp ")" | Number;
+/// PrimaryExp  ::= "(" Exp ")" | Number;
 #[derive(Debug)]
 pub enum PrimaryExp {
-    Exp(Box<Exp>),
+    Ausdruck(Box<Exp>),
     Number(Number),
 }
 
-// UnaryExp   ::= PrimaryExp | UnaryOp UnaryExp;
+/// UnaryExp   ::= PrimaryExp | UnaryOp UnaryExp;
 #[derive(Debug)]
 pub enum UnaryExp {
-    Primary(PrimaryExp),
-    Unary(UnaryOp, Box<UnaryExp>)
+    PrimaryAusdruck(PrimaryExp),
+    UnaryAusdruck(UnaryOp, Box<UnaryExp>)
 }
 
-// UnaryOp     ::= "+" | "-" | "!";
+/// MulExp      ::= UnaryExp | MulExp MulOp UnaryExp;
+#[derive(Debug)]
+pub enum MulExp {
+    UnaryAusdruck(UnaryExp),
+    MulAusdruck(Box<MulExp>, MulOp, UnaryExp)
+}
+
+/// AddExp ::= MulExp | AddExp AddOp MulExp
+#[derive(Debug)]
+pub enum AddExp {
+    MulAusdruck(MulExp),
+    AddAusdruck(Box<AddExp>, AddOp, MulExp)
+}
+
+/// RelExp ::=  AddExp | RelExp ("<" | ">" | "<=" | ">=") AddExp
+#[derive(Debug)]
+pub enum RelExp {
+    AddAusdruck(AddExp),
+    RelAusdruck(Box<RelExp>, RelOp, AddExp)
+}
+
+/// EqExp ::= RelExp | EqExp ("==" | "!=") RelExp;
+#[derive(Debug)]
+pub enum EqExp {
+    RelAusdruck(RelExp),
+    EqAusdruck(Box<EqExp>, EqOp, RelExp)
+}
+
+/// EqExp | LAndExp "&&" EqExp;
+#[derive(Debug)]
+pub enum LAndExp {
+    EqAusdruck(EqExp),
+    LAndAusdruck(Box<LAndExp>, EqExp)
+}
+
+/// LOrExp      ::= LAndExp | LOrExp "||" LAndExp;
+#[derive(Debug)]
+pub enum LOrExp {
+    LAndAusdruck(LAndExp),
+    LOrAusdruck(Box<LOrExp>, LAndExp)
+}
+
+/// Operator: From high level to low
+/// UnaryOp     ::= "+" | "-" | "!";
 #[derive(Debug)]
 pub enum UnaryOp {
     Negative,
     LNot,
     Positive
 }
-// Number    ::= INT_CONST;
-type Number = i32;
+
+/// MulOp ::= "*" | "/" | "%"
+#[derive(Debug)]
+pub enum MulOp {
+    Mul,
+    Div,
+    Mod
+}
+
+/// AddOp ::= "+" | "-"
+#[derive(Debug)]
+pub enum AddOp {
+    Add,
+    Sub
+}
+
+/// RelOp ::= "<" | ">" | "<=" | ">="
+#[derive(Debug)]
+pub enum RelOp {
+    Lt,
+    Gt,
+    Le,
+    Ge
+}
+
+/// EqOp ::= "==" | "!="
+#[derive(Debug)]
+pub enum EqOp {
+    Eq,
+    NotEq
+}

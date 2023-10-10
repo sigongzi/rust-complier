@@ -1,4 +1,5 @@
 mod expgen;
+mod opgen;
 use crate::ast::*;
 use koopa::ir::builder_traits::*;
 use koopa::ir::{FunctionData, Program, Type};
@@ -88,7 +89,7 @@ impl<'ast> GenerateIR<'ast> for Stmt {
 
         // generate return command
         let ret = cur_func.new_value(program).ret(match exp_result {
-            //ExpResult::Void => None,
+            ExpResult::Void => None,
             ExpResult::Int(v) => Some(v)
         });
 
