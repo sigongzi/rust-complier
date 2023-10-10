@@ -1,3 +1,4 @@
+mod expgen;
 use crate::ast::*;
 use koopa::ir::builder_traits::*;
 use koopa::ir::{FunctionData, Program, Type};
@@ -78,13 +79,15 @@ impl<'ast> GenerateIR<'ast> for Stmt {
     type Out = ();
     fn generate(&'ast self, program: &mut Program, context : &mut Context) 
         -> Result<Self::Out> {
-        let cur_func = context.current_func.as_mut().unwrap();
+        let exp = self.exp.generate(program, context);    
+        let cur_func = context.get_current_func();
         
-        let num = cur_func.new_value(program).integer(self.num);
+        let num = cur_func.new_value(program).integer(0);
         let ret = cur_func.new_value(program).ret(Some(num));
 
         cur_func.push_inst_to_entry(program, ret);
         Ok(())
     }
 }
+
 

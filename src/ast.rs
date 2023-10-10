@@ -30,11 +30,40 @@ pub struct Block {
 }
 
 
-// Stmt ::= "return" Number ";";
+// Stmt ::= "return" <Exp> ";";
 #[derive(Debug)] 
 pub struct Stmt {
-    pub num : Number
+    pub exp : Exp
 }
 
+
+// Exp ::= UnaryExp
+#[derive(Debug)]
+pub struct Exp {
+    pub unary : UnaryExp
+}
+
+
+// PrimaryExp  ::= "(" Exp ")" | Number;
+#[derive(Debug)]
+pub enum PrimaryExp {
+    Exp(Box<Exp>),
+    Number(Number),
+}
+
+// UnaryExp   ::= PrimaryExp | UnaryOp UnaryExp;
+#[derive(Debug)]
+pub enum UnaryExp {
+    Primary(PrimaryExp),
+    Unary(UnaryOp, Box<UnaryExp>)
+}
+
+// UnaryOp     ::= "+" | "-" | "!";
+#[derive(Debug)]
+pub enum UnaryOp {
+    Negative,
+    LNot,
+    Positive
+}
 // Number    ::= INT_CONST;
 type Number = i32;

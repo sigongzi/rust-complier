@@ -11,7 +11,7 @@ impl Context {
             current_func: None 
         }
     }
-    /*pub fn get_current_func(&self) -> &mut FunctionHandler{
+    pub fn get_current_func(&mut self) -> &mut FunctionHandler{
         self.current_func.as_mut().unwrap()
-    }*/
+    }
 }

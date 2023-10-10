@@ -25,12 +25,13 @@ pub enum IRError {
     // UseVoidValue,
     // ArgMismatch,
     // NonIntCalc,
+    NotInFunction
 }
 
 
 impl fmt::Display for IRError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        //match self {
+        // match self {
         // Self::DuplicatedDef => write!(f, "duplicated symbol definition"),
         // Self::SymbolNotFound => write!(f, "symbol not found"),
         // Self::FailedToEval => write!(f, "failed to evaluate constant"),
@@ -43,7 +44,7 @@ impl fmt::Display for IRError {
         // Self::UseVoidValue => write!(f, "using a void value"),
         // Self::ArgMismatch => write!(f, "argument mismatch"),
         // Self::NonIntCalc => write!(f, "non-integer calculation"),
-        //}
+        // }
         Ok(())
     }
 }
