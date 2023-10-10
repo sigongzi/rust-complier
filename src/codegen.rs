@@ -1,7 +1,7 @@
 mod gen;
 mod prog;
 
-use koopa::ir::{Program, Type};
+use koopa::ir::Program;
 use std::fmt;
 use std::fs::File;
 
@@ -11,7 +11,7 @@ use self::gen::GenerateAsm;
 pub type Result<T> = std::result::Result<T, GenerateError>;
 pub fn generate_asm(program : &Program, path : &str) -> Result<()> {
     
-    program.generate_asm(&mut File::create(path)?, &mut ProgramHandler::new(program));
+    program.generate_asm(&mut File::create(path)?, &mut ProgramHandler::new(program))?;
     Ok(())
 }
 

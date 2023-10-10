@@ -1,4 +1,9 @@
 // cargo run -- -koopa hello.c -o hello.koopa
+
+/// usage: compiler -[koopa/riscv/perf] <INPUT_FILE> -o <OUTPUT_FILE>
+/// test: autotest [-h] [-koopa | -riscv | -perf] [-t TEST_CASE_DIR] [-w WORKING_DIR] [-s SUB_DIR] repo_dir
+/// test lv3 : autotest -koopa -s lv3 ./
+/// autotest -riscv -s lv3 ./
 mod ast;
 mod irgen;
 mod codegen;

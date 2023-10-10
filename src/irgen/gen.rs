@@ -5,6 +5,7 @@ use koopa::ir::{FunctionData, Program, Type};
 use super::context::Context;
 use super::Result;
 use super::func::FunctionHandler;
+use expgen::ExpResult;
 
 // Trait for generating Koopa IR for all ast component.
 
@@ -45,7 +46,7 @@ impl<'ast> GenerateIR<'ast> for FuncDef {
         // update function information in program Function Hashmap
         let func = program.new_func(function_data);
 
-        let mut function_handler = FunctionHandler::new(func, entry);
+        let function_handler = FunctionHandler::new(func, entry);
 
         context.current_func = Some(function_handler);
         // insert function handler in to context as current function
@@ -56,7 +57,7 @@ impl<'ast> GenerateIR<'ast> for FuncDef {
 
 impl<'ast> GenerateIR<'ast> for FuncType {
     type Out = Type;
-    fn generate(&'ast self, program: &mut Program, context : &mut Context) 
+    fn generate(&'ast self, _program: &mut Program, _context : &mut Context) 
         -> Result<Self::Out> {
         Ok(
         match self {
@@ -79,11 +80,17 @@ impl<'ast> GenerateIR<'ast> for Stmt {
     type Out = ();
     fn generate(&'ast self, program: &mut Program, context : &mut Context) 
         -> Result<Self::Out> {
-        let exp = self.exp.generate(program, context);    
+        // get expression result for return 
+        let exp_result = self.exp.generate(program, context)?;
+
         let cur_func = context.get_current_func();
         
-        let num = cur_func.new_value(program).integer(0);
-        let ret = cur_func.new_value(program).ret(Some(num));
+
+        // generate return command
+        let ret = cur_func.new_value(program).ret(match exp_result {
+            //ExpResult::Void => None,
+            ExpResult::Int(v) => Some(v)
+        });
 
         cur_func.push_inst_to_entry(program, ret);
         Ok(())

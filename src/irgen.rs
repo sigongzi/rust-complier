@@ -4,7 +4,7 @@ mod context;
 
 use crate::ast::CompUnit;
 use gen::GenerateIR;
-use koopa::ir::{Program, Type};
+use koopa::ir::{Program};
 use std::fmt;
 
 use self::context::Context;
@@ -22,16 +22,16 @@ pub enum IRError {
     // NotInLoop,
     // RetValInVoidFunc,
     // DerefInt,
-    // UseVoidValue,
     // ArgMismatch,
     // NonIntCalc,
-    NotInFunction
+    VoidValue
 }
 
 
 impl fmt::Display for IRError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // match self {
+        match self {
+            Self::VoidValue => write!(f,"use void value in an expression")
         // Self::DuplicatedDef => write!(f, "duplicated symbol definition"),
         // Self::SymbolNotFound => write!(f, "symbol not found"),
         // Self::FailedToEval => write!(f, "failed to evaluate constant"),
@@ -44,8 +44,7 @@ impl fmt::Display for IRError {
         // Self::UseVoidValue => write!(f, "using a void value"),
         // Self::ArgMismatch => write!(f, "argument mismatch"),
         // Self::NonIntCalc => write!(f, "non-integer calculation"),
-        // }
-        Ok(())
+        }
     }
 }
 

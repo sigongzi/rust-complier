@@ -1,7 +1,7 @@
 mod valuegen;
 use koopa::ir::entities::ValueData;
-use koopa::ir::values::*;
-use koopa::ir::{BasicBlock, Function, FunctionData, Program, TypeKind, Value, ValueKind};
+
+use koopa::ir::{FunctionData, Program, ValueKind};
 use super::Result;
 use super::prog::ProgramHandler;
 use std::fs::File;
@@ -44,9 +44,9 @@ impl GenerateAsm for FunctionData{
 
         // 2. generate instruction in basic blocks
 
-        for (bb, node) in self.layout().bbs() {
+        for (_bb, node) in self.layout().bbs() {
             for &inst in node.insts().keys() {
-                self.dfg().value(inst).generate_asm(f, handler);
+                self.dfg().value(inst).generate_asm(f, handler)?;
             }
         }
         Ok(())

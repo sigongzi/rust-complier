@@ -1,8 +1,8 @@
-use koopa::ir::{Value, ValueKind};
-use koopa::ir::values::{Return, Integer};
+use koopa::ir::{ValueKind};
+use koopa::ir::values::{Return};
 
 use crate::codegen::prog::ProgramHandler;
-use crate::codegen::{Result, GenerateError};
+use crate::codegen::{GenerateError};
 use super::GenerateAsm;
 use std::fs::File;
 use std::io::Write;
