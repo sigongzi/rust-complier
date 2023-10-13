@@ -1,14 +1,14 @@
 mod valuegen;
-use koopa::ir::builder_traits::LocalInstBuilder;
-use koopa::ir::entities::ValueData;
+
+
 use valuegen::GenerateAsmValue;
 use koopa::ir::{FunctionData, Program, ValueKind};
 use super::asmwriter::AsmWriter;
-use super::{Result, asmwriter, context};
+use super::{Result};
 use super::context::ProgramContext;
 use super::func::FunctionHandler;
 use std::fs::File;
-use std::io::Write;
+
 
 // A unified trait for all the memory structure in Program
 
@@ -51,7 +51,7 @@ impl<'p> GenerateAsm<'p> for FunctionData{
         //let cur_func = context.get_func_handler().unwarp();
         let stack_size = {
             let mut sum : i32 = 0;
-            for (bb, node) in self.layout().bbs() {
+            for (_bb, node) in self.layout().bbs() {
                 for &value in node.insts().keys() {
                     let d = context.get_value_data(&value);
                     match d.kind() {
@@ -68,7 +68,7 @@ impl<'p> GenerateAsm<'p> for FunctionData{
         asmwriter.prologue(f, &(self.name()), stack_size);
 
         let mut alloc_pos = 0;
-        for (bb, node) in self.layout().bbs() {
+        for (_bb, node) in self.layout().bbs() {
             for &value in node.insts().keys() {
                 let d = context.get_value_data(&value);
                 match d.kind() {

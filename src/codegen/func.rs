@@ -1,4 +1,4 @@
-use koopa::ir::{BasicBlock, Function, Value, Program, entities::BasicBlockData};
+use koopa::ir::{BasicBlock, Function, Value};
 use std::collections::HashMap;
 
 use super::{Result, GenerateError};

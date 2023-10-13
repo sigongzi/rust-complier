@@ -1,9 +1,9 @@
 use koopa::ir::{Value, TypeKind};
 use koopa::ir::builder::{LocalBuilder,LocalInstBuilder};
 use koopa::ir::builder_traits::BasicBlockBuilder;
-use koopa::ir::entities::{ValueData, BasicBlockData};
+use koopa::ir::entities::{ValueData};
 use koopa::ir::{BasicBlock, Function, Program, Type};
-use koopa::return_error;
+
 
 
 pub struct FunctionHandler {
@@ -110,7 +110,7 @@ impl FunctionHandler {
         func(self.func)
         .ty()
         .kind() {
-            TypeKind::Function(f, t) => t.kind(),
+            TypeKind::Function(_f, t) => t.kind(),
             _ => unreachable!()
         }
     }

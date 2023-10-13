@@ -1,5 +1,5 @@
 
-use koopa::ir::{BinaryOp, Value, entities::ValueData, ValueKind};
+use koopa::ir::{BinaryOp, entities::ValueData, ValueKind};
 use crate::irgen::{Result, IRError};
 use crate::ast::*;
 pub trait SelectBinaryOp {

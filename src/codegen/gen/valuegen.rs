@@ -2,13 +2,13 @@ use koopa::ir::{Value, ValueKind};
 use koopa::ir::values::{*};
 use koopa::ir::entities::ValueData;
 use crate::function_handler;
-use crate::codegen::asmwriter::{AsmWriter, self};
+use crate::codegen::asmwriter::{AsmWriter};
 use crate::codegen::context::ProgramContext;
-use crate::codegen::GenerateError;
+
 use crate::codegen::Result;
 use super::GenerateAsm;
 use std::fs::File;
-use std::io::Write;
+
 
 /*
 impl GenerateAsm for Return {
@@ -67,7 +67,7 @@ impl<'p> GenerateAsmValue<'p> for Jump {
 
 impl<'p> GenerateAsmValue<'p> for Store {
     type Out = ();
-    fn generate_asm(&self, f : &'p mut File, context : &'p mut ProgramContext, value : &Value) -> Result<Self::Out> {
+    fn generate_asm(&self, f : &'p mut File, context : &'p mut ProgramContext, _value : &Value) -> Result<Self::Out> {
         let asm = AsmWriter::new();
         let tmp = "t2";
         asm.load(f, context, &(self.value()), tmp);
@@ -90,7 +90,7 @@ impl<'p> GenerateAsmValue<'p> for Load {
 
 impl<'p> GenerateAsmValue<'p> for Return {
     type Out = ();
-    fn generate_asm(&self, f : &'p mut File, context : &'p mut ProgramContext, value : &Value) -> Result<Self::Out> {
+    fn generate_asm(&self, f : &'p mut File, context : &'p mut ProgramContext, _value : &Value) -> Result<Self::Out> {
         let asm = AsmWriter::new();
         match self.value() {
             Some(v) => {
@@ -106,7 +106,7 @@ impl<'p> GenerateAsmValue<'p> for Return {
 
 impl<'p> GenerateAsmValue<'p> for Branch {
     type Out = ();
-    fn generate_asm(&self, f : &'p mut File, context : &'p mut ProgramContext, value : &Value) -> Result<Self::Out> {
+    fn generate_asm(&self, f : &'p mut File, context : &'p mut ProgramContext, _value : &Value) -> Result<Self::Out> {
         let asm = AsmWriter::new();
         let tmp = "t2";
         asm.load(f, context, &(self.cond()), tmp)?;
@@ -123,7 +123,7 @@ impl<'p> GenerateAsmValue<'p> for Binary {
         let asmwriter = AsmWriter::new();
         asmwriter.load(f, context, &(self.lhs()), "t0");
         asmwriter.load(f, context, &(self.rhs()), "t1");
-        let tmp = "t2";
+        let _tmp = "t2";
         match self.op() {
             BinaryOp::Add => asmwriter.add(f, "t0", "t1", "t2")?,
             BinaryOp::Sub => asmwriter.sub(f, "t0", "t1", "t2")?,
