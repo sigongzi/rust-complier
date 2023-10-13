@@ -1,64 +1,98 @@
 mod valuegen;
+use koopa::ir::builder_traits::LocalInstBuilder;
 use koopa::ir::entities::ValueData;
-
+use valuegen::GenerateAsmValue;
 use koopa::ir::{FunctionData, Program, ValueKind};
-use super::Result;
-use super::prog::ProgramHandler;
+use super::asmwriter::AsmWriter;
+use super::{Result, asmwriter, context};
+use super::context::ProgramContext;
+use super::func::FunctionHandler;
 use std::fs::File;
 use std::io::Write;
 
 // A unified trait for all the memory structure in Program
 
 // Program are composed by value and function
-pub trait GenerateAsm {
+pub trait GenerateAsm<'p> {
     type Out;
-    fn generate_asm(&self, f : &mut File, handler : &mut ProgramHandler) -> Result<Self::Out>;
+    fn generate_asm(&self, f : &'p mut File, context : &'p mut ProgramContext) -> Result<Self::Out>;
 }
 
-impl GenerateAsm for Program {
+impl<'p> GenerateAsm<'p> for Program {
     type Out = ();
 
-    fn generate_asm(&self, f : &mut File, handler : &mut ProgramHandler) -> Result<Self::Out> {
+    fn generate_asm(&self, f : &'p mut File, context : &'p mut ProgramContext) -> Result<Self::Out> {
         
 
         // generate function
         for &func in self.func_layout() {
             // save current function in the handler to pass infomation
-            handler.set_current_function(func);
+            context.set_current_function(
+                FunctionHandler::new(func, context.get_function_cnt())
+            );
+
+
             // generate assembly for FunctionData
-            self.func(func).generate_asm(f, handler)?;
+            self.func(func).generate_asm(f, context)?;
         }
         Ok(())
     }
 }
 
-impl GenerateAsm for FunctionData{
+impl<'p> GenerateAsm<'p> for FunctionData{
     type Out = ();
-    fn generate_asm(&self, f : &mut File, handler : &mut ProgramHandler) -> Result<Self::Out> {
+    fn generate_asm(&self, f : &'p mut File, context : &'p mut ProgramContext) -> Result<Self::Out> {
+        
+        // build asmwriter for the file pointer
+        let mut asmwriter = AsmWriter::new();
+        
         // 1. generate prologue for the function
+        
+        //let cur_func = context.get_func_handler().unwarp();
+        let stack_size = {
+            let mut sum : i32 = 0;
+            for (bb, node) in self.layout().bbs() {
+                for &value in node.insts().keys() {
+                    let d = context.get_value_data(&value);
+                    match d.kind() {
+                        ValueKind::Binary(_) | ValueKind::Alloc(_) | ValueKind::Load(_)=> {sum += 4;}
+                        _ => {}
+                    };
+                }
+            }
+            if sum == 0 {0}
+            else {
+                ((sum -  1)/ 16 + 1) * 16
+            }
+        };
+        asmwriter.prologue(f, &(self.name()), stack_size);
 
-        writeln!(f, "  .text")?;
-        let name = self.name();
-        writeln!(f, "  .globl {}", &name[1..])?;
-        writeln!(f, "{}:", &name[1..])?;
-
-        // 2. generate instruction in basic blocks
-
-        for (_bb, node) in self.layout().bbs() {
-            for &inst in node.insts().keys() {
-                self.dfg().value(inst).generate_asm(f, handler)?;
+        let mut alloc_pos = 0;
+        for (bb, node) in self.layout().bbs() {
+            for &value in node.insts().keys() {
+                let d = context.get_value_data(&value);
+                match d.kind() {
+                    ValueKind::Binary(_) | ValueKind::Alloc(_) | ValueKind::Load(_)=> {
+                        context.cur_func.as_mut().unwrap().set_value_pos(value, alloc_pos);
+                        alloc_pos += 4;
+                    }
+                    _ => {}
+                };
             }
         }
+        
+
+        // 2. generate instruction in basic blocks
+        
+        for (bb, node) in self.layout().bbs() {
+            asmwriter.block_name(f, context.get_basic_block_name(*bb));
+            for &inst in node.insts().keys() {
+                self.dfg().value(inst).generate_asm(f, context, &inst)?;
+            }
+        }
+        asmwriter.epilogue(f, stack_size, context.get_function_cnt());
         Ok(())
     }
 }
 
-impl GenerateAsm for ValueData {
-    type Out = ();
-    fn generate_asm(&self, f : &mut File, handler : &mut ProgramHandler) -> Result<Self::Out> {
-        match self.kind() {
-            ValueKind::Return(v) => v.generate_asm(f, handler),
-            _ => Ok(())
-        }
-    }
-}
+

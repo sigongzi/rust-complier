@@ -1,6 +1,6 @@
 
-use koopa::ir::BinaryOp;
-
+use koopa::ir::{BinaryOp, Value, entities::ValueData, ValueKind};
+use crate::irgen::{Result, IRError};
 use crate::ast::*;
 pub trait SelectBinaryOp {
     fn select_binary_op(&self) -> BinaryOp;
@@ -42,5 +42,31 @@ impl SelectBinaryOp for EqOp {
             EqOp::Eq => BinaryOp::Eq,
             EqOp::NotEq => BinaryOp::NotEq
         }
+    }
+}
+
+pub fn calculate_in_advance(op : BinaryOp, l : &ValueData, r : &ValueData) -> Result<i32>{
+
+    let (lhs, rhs) = match (l.kind(),r.kind()) {
+        (ValueKind::Integer(l), ValueKind::Integer(r)) => 
+        (l.value(), r.value()),
+        _ => {
+            return Err(IRError::AdvancedEvaluation("value is not integer".to_string()));
+        }
+    };
+
+    match op{
+        BinaryOp::Mul => Ok(lhs * rhs),
+        BinaryOp::Div => Ok(lhs / rhs),
+        BinaryOp::Mod => Ok(lhs % rhs),
+        BinaryOp::Sub => Ok(lhs - rhs),
+        BinaryOp::Add => Ok(lhs + rhs),
+        BinaryOp::Lt => Ok((lhs < rhs) as i32),
+        BinaryOp::Gt => Ok((lhs > rhs) as i32),
+        BinaryOp::Le => Ok((lhs <= rhs) as i32),
+        BinaryOp::Ge => Ok((lhs >= rhs) as i32),
+        BinaryOp::Eq => Ok((lhs == rhs) as i32),
+        BinaryOp::NotEq => Ok((lhs != rhs) as i32),
+        _ => Err(IRError::AdvancedEvaluation("Unsupported binary operator".to_string()))
     }
 }

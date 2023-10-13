@@ -1,7 +1,7 @@
 mod expgen;
 mod opgen;
-use crate::ast::*;
-use koopa::ir::builder_traits::*;
+use crate::{ast::*, cur_func};
+use koopa::ir::{builder_traits::*, TypeKind};
 use koopa::ir::{FunctionData, Program, Type};
 use super::context::Context;
 use super::Result;
@@ -40,18 +40,57 @@ impl<'ast> GenerateIR<'ast> for FuncDef {
 
         // generate entry block 
         let entry = function_data.dfg_mut().new_bb().basic_block(Some("%entry".into()));
+        let end = function_data.dfg_mut().new_bb().basic_block(Some("%end".into()));
+        let cur = function_data.dfg_mut().new_bb().basic_block(None);
 
-        // add the entry block into function data
-        function_data.layout_mut().bbs_mut().extend([entry]);
+        function_data.layout_mut().bbs_mut().extend([entry, cur, end]);
+
+        
+
 
         // update function information in program Function Hashmap
         let func = program.new_func(function_data);
 
-        let function_handler = FunctionHandler::new(func, entry);
+        let function_handler = FunctionHandler::new(func, entry, cur, end);
+        
 
-        context.current_func = Some(function_handler);
+        
+
         // insert function handler in to context as current function
+        context.current_func = Some(function_handler);
+        
+        
+
+        
+
+        // alloc return in entry block(if have)
+        match cur_func!(context).get_function_kind(program) {
+            &TypeKind::Int32 => {
+                //println!("return type is i32");
+                let ret_val =  cur_func!(context).create_initial_variable(program, Type::get_i32(), Some("ret".into()));
+
+                let load = cur_func!(context).new_value(program).load(ret_val);
+                let ret = cur_func!(context).new_value(program).ret(Some(load));
+                
+                cur_func!(context).set_ret_val(ret_val);
+
+                cur_func!(context).push_inst_to(program, end, load);
+                cur_func!(context).push_inst_to(program, end, ret);
+
+            },
+            _ => {
+                //println!("return type is not i32");
+                let ret = cur_func!(context).new_value(program).ret(None);
+
+                cur_func!(context).push_inst_to(program, end, ret);
+            }
+        }; 
+
         self.block.generate(program, context)?;
+
+        // TODO: temporary method to prevent empty entry block
+        let jump = cur_func!(context).new_value(program).jump(cur);
+        cur_func!(context).push_inst_to(program, entry, jump);
         Ok(())
     }
 }
@@ -88,12 +127,19 @@ impl<'ast> GenerateIR<'ast> for Stmt {
         
 
         // generate return command
-        let ret = cur_func.new_value(program).ret(match exp_result {
+        let v = match exp_result {
             ExpResult::Void => None,
-            ExpResult::Int(v) => Some(v)
-        });
-
-        cur_func.push_inst_to_entry(program, ret);
+            ExpResult::Int(v) => Some(v),
+            ExpResult::IntPtr(v) => Some(v)
+        };
+        if let Some(val) = v {
+            let store = cur_func.new_value(program).store(val, 
+            cur_func.get_ret_value());
+            cur_func.push_inst(program, store);
+            
+        }
+        let jump = cur_func.new_value(program).jump(cur_func.get_end());
+        cur_func.push_inst(program, jump);
         Ok(())
     }
 }
