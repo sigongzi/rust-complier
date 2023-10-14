@@ -1,13 +1,13 @@
 use crate::ast::*;
 
 use koopa::ir::builder_traits::*;
-use koopa::ir::{Value, Program, Type};
+use koopa::ir::{Program, Type};
 use crate::irgen::context::Context;
 use crate::cur_func;
 use crate::irgen::{Result, GenerateIR};
-use crate::irgen::IRError;
-use koopa::ir::BinaryOp;
-use paste::paste;
+
+
+
 use super::expgen::{*};
 
 impl<'ast> GenerateIR<'ast> for Decl{

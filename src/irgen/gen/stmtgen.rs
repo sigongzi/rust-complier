@@ -1,15 +1,15 @@
 use crate::ast::*;
 
-use koopa::back::generator;
+
 use koopa::ir::builder_traits::*;
-use koopa::ir::{Value, Program, Type};
-use crate::irgen::context::{Context, self};
+use koopa::ir::{Program};
+use crate::irgen::context::{Context};
 use crate::cur_func;
 use crate::irgen::{Result, GenerateIR};
-use crate::irgen::IRError;
-use koopa::ir::BinaryOp;
-use paste::paste;
-use super::opgen::{SelectBinaryOp, self};
+
+
+
+
 
 impl<'ast> GenerateIR<'ast> for Stmt {
     type Out = ();

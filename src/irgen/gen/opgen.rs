@@ -1,6 +1,6 @@
 
-use koopa::ir::{BinaryOp, entities::ValueData, ValueKind};
-use crate::irgen::{Result, IRError};
+use koopa::ir::{BinaryOp};
+
 use crate::ast::*;
 pub trait SelectBinaryOp {
     fn select_binary_op(&self) -> BinaryOp;
@@ -45,6 +45,7 @@ impl SelectBinaryOp for EqOp {
     }
 }
 
+/* 
 pub fn calculate_in_advance(op : BinaryOp, l : &ValueData, r : &ValueData) -> Result<i32>{
 
     let (lhs, rhs) = match (l.kind(),r.kind()) {
@@ -69,4 +70,4 @@ pub fn calculate_in_advance(op : BinaryOp, l : &ValueData, r : &ValueData) -> Re
         BinaryOp::NotEq => Ok((lhs != rhs) as i32),
         _ => Err(IRError::AdvancedEvaluation("Unsupported binary operator".to_string()))
     }
-}
+}*/

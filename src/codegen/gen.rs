@@ -65,7 +65,7 @@ impl<'p> GenerateAsm<'p> for FunctionData{
                 ((sum -  1)/ 16 + 1) * 16
             }
         };
-        asmwriter.prologue(f, &(self.name()), stack_size);
+        asmwriter.prologue(f, &(self.name()), stack_size)?;
 
         let mut alloc_pos = 0;
         for (_bb, node) in self.layout().bbs() {
@@ -85,12 +85,12 @@ impl<'p> GenerateAsm<'p> for FunctionData{
         // 2. generate instruction in basic blocks
         
         for (bb, node) in self.layout().bbs() {
-            asmwriter.block_name(f, context.get_basic_block_name(*bb));
+            asmwriter.block_name(f, context.get_basic_block_name(*bb))?;
             for &inst in node.insts().keys() {
                 self.dfg().value(inst).generate_asm(f, context, &inst)?;
             }
         }
-        asmwriter.epilogue(f, stack_size, context.get_function_cnt());
+        asmwriter.epilogue(f, stack_size, context.get_function_cnt())?;
         Ok(())
     }
 }

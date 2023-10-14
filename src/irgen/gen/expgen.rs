@@ -1,15 +1,15 @@
 use crate::ast::*;
 
-use koopa::back::generator;
+
 use koopa::ir::builder_traits::*;
 use koopa::ir::{Value, Program, Type};
-use crate::irgen::context::{Context, self};
+use crate::irgen::context::{Context};
 use crate::cur_func;
 use crate::irgen::{Result, GenerateIR};
 use crate::irgen::IRError;
 use koopa::ir::BinaryOp;
 use paste::paste;
-use super::opgen::{SelectBinaryOp, self};
+use super::opgen::{SelectBinaryOp};
 
 /// pass the result of a exp
 /// Value: a structrue in koopa IR
@@ -48,7 +48,7 @@ impl ExpResult {
 
 impl<'ast> GenerateIR<'ast> for LVal {
     type Out = ExpResult;
-    fn generate(&'ast self, program: &mut Program, context : &mut Context) 
+    fn generate(&'ast self, _program: &mut Program, context : &mut Context) 
         -> Result<Self::Out> {
             let var = cur_func!(context).require_val(&self.id).ok_or(IRError::UndefinedLVal((&self.id).to_string()))?;
             Ok(ExpResult::IntPtr(var))

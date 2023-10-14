@@ -13,6 +13,7 @@ pub struct ProgramContext<'p> {
     function_cnt : usize,
 }
 
+#[allow(unused)]
 impl<'p> ProgramContext<'p> {
     pub fn new(program: &'p Program) -> Self{
         Self { 

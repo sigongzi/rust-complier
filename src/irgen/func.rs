@@ -16,6 +16,7 @@ pub struct FunctionHandler {
     const_val : HashMap<String, Value>,
 }
 
+#[allow(dead_code)]
 impl FunctionHandler {
     pub fn new(func : Function, entry : BasicBlock, cur: BasicBlock, end : BasicBlock) -> Self {
         Self {

@@ -8,7 +8,7 @@ use koopa::ir::{FunctionData, Program, Type};
 use super::context::Context;
 use super::Result;
 use super::func::FunctionHandler;
-use expgen::ExpResult;
+
 
 // Trait for generating Koopa IR for all ast component.
 

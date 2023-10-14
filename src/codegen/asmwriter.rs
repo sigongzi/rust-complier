@@ -17,6 +17,7 @@ macro_rules! binary_op {
         }
     };
 }
+#[allow(unused)]
 impl AsmWriter {
     pub fn new() -> Self {
         Self { }
@@ -27,12 +28,12 @@ impl AsmWriter {
         writeln!(f,"  .globl {}", &func_name[1..])?;
         writeln!(f,"{}:", &func_name[1..])?;
         if stack_size != 0 {
-            writeln!(f, "addi sp, sp, {}", -stack_size);
+            writeln!(f, "addi sp, sp, {}", -stack_size)?;
         }
         Ok(())
     }
     pub fn epilogue(&mut self, f: &mut File, stack_size : i32, func_id : usize) -> Result<()> {
-        writeln!(f, "end_{}:", func_id);
+        writeln!(f, "end_{}:", func_id)?;
         if stack_size != 0 {
             writeln!(f, "addi sp, sp, {}", stack_size)?;
         }

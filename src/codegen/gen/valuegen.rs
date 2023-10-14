@@ -1,11 +1,12 @@
+
 use koopa::ir::{Value, ValueKind};
 use koopa::ir::values::{*};
 use koopa::ir::entities::ValueData;
 use crate::function_handler;
 use crate::codegen::asmwriter::{AsmWriter};
 use crate::codegen::context::ProgramContext;
-
 use crate::codegen::Result;
+#[allow(unused_imports)]
 use super::GenerateAsm;
 use std::fs::File;
 
@@ -60,7 +61,7 @@ impl<'p> GenerateAsmValue<'p> for Jump {
     fn generate_asm(&self, f : &'p mut File, context : &'p mut ProgramContext, _v : &Value) -> Result<Self::Out> {
         let asm = AsmWriter::new();
         let name = function_handler!(context).get_basic_block_name(self.target());
-        asm.jump(f, name);
+        asm.jump(f, name)?;
         Ok(())
     }
 }
@@ -70,8 +71,8 @@ impl<'p> GenerateAsmValue<'p> for Store {
     fn generate_asm(&self, f : &'p mut File, context : &'p mut ProgramContext, _value : &Value) -> Result<Self::Out> {
         let asm = AsmWriter::new();
         let tmp = "t2";
-        asm.load(f, context, &(self.value()), tmp);
-        asm.store(f, context, &(self.dest()), tmp);
+        asm.load(f, context, &(self.value()), tmp)?;
+        asm.store(f, context, &(self.dest()), tmp)?;
         Ok(())
     }
 }
@@ -82,8 +83,8 @@ impl<'p> GenerateAsmValue<'p> for Load {
     fn generate_asm(&self, f : &'p mut File, context : &'p mut ProgramContext, value : &Value) -> Result<Self::Out> {
         let asm = AsmWriter::new();
         let tmp = "t2";
-        asm.load(f, context, &(self.src()), tmp);
-        asm.store(f, context, &value, tmp);
+        asm.load(f, context, &(self.src()), tmp)?;
+        asm.store(f, context, &value, tmp)?;
         Ok(())
     }
 }
@@ -121,8 +122,8 @@ impl<'p> GenerateAsmValue<'p> for Binary {
     type Out = ();
     fn generate_asm(&self, f : &'p mut File, context : &'p mut ProgramContext, value : &Value) -> Result<Self::Out> {
         let asmwriter = AsmWriter::new();
-        asmwriter.load(f, context, &(self.lhs()), "t0");
-        asmwriter.load(f, context, &(self.rhs()), "t1");
+        asmwriter.load(f, context, &(self.lhs()), "t0")?;
+        asmwriter.load(f, context, &(self.rhs()), "t1")?;
         let _tmp = "t2";
         match self.op() {
             BinaryOp::Add => asmwriter.add(f, "t0", "t1", "t2")?,
@@ -133,28 +134,28 @@ impl<'p> GenerateAsmValue<'p> for Binary {
             BinaryOp::Lt => asmwriter.slt(f, "t0", "t1", "t2")?,
             BinaryOp::Gt => asmwriter.sgt(f, "t0", "t1","t2")?,
             BinaryOp::Eq => {
-                asmwriter.xor(f, "t0", "t1", "t2");
-                asmwriter.seqz(f, "t2", "t2");
+                asmwriter.xor(f, "t0", "t1", "t2")?;
+                asmwriter.seqz(f, "t2", "t2")?;
             },
             BinaryOp::NotEq => {
-                asmwriter.xor(f, "t0", "t1", "t2");
-                asmwriter.snez(f, "t2", "t2");
+                asmwriter.xor(f, "t0", "t1", "t2")?;
+                asmwriter.snez(f, "t2", "t2")?;
             },
             BinaryOp::Le => {
-                asmwriter.xor(f, "t0", "t1", "t2");
-                asmwriter.seqz(f, "t2", "t2");
-                asmwriter.slt(f, "t0", "t1", "t1");
-                asmwriter.or(f, "t1", "t2", "t2");
+                asmwriter.xor(f, "t0", "t1", "t2")?;
+                asmwriter.seqz(f, "t2", "t2")?;
+                asmwriter.slt(f, "t0", "t1", "t1")?;
+                asmwriter.or(f, "t1", "t2", "t2")?;
             },
             BinaryOp::Ge => {
-                asmwriter.xor(f, "t0", "t1", "t2");
-                asmwriter.seqz(f, "t2", "t2");
-                asmwriter.sgt(f, "t0", "t1", "t1");
-                asmwriter.or(f, "t1", "t2", "t2");
+                asmwriter.xor(f, "t0", "t1", "t2")?;
+                asmwriter.seqz(f, "t2", "t2")?;
+                asmwriter.sgt(f, "t0", "t1", "t1")?;
+                asmwriter.or(f, "t1", "t2", "t2")?;
             }
             _ => ()
         }
-        asmwriter.store(f, context, value, "t2");
+        asmwriter.store(f, context, value, "t2")?;
         Ok(())
     }
 }
