@@ -1,8 +1,9 @@
 use crate::ast::*;
 
+use koopa::back::generator;
 use koopa::ir::builder_traits::*;
 use koopa::ir::{Value, Program, Type};
-use crate::irgen::context::Context;
+use crate::irgen::context::{Context, self};
 use crate::cur_func;
 use crate::irgen::{Result, GenerateIR};
 use crate::irgen::IRError;
@@ -23,14 +24,34 @@ pub enum ExpResult {
 }
 
 impl ExpResult {
-    pub fn into_int(self) -> Result<Value> {
+    pub fn into_int(self,program: &mut Program,context: &mut Context) -> Result<Value> {
         match self {
             // there is an error when expresult is void
             Self::Void => Err(IRError::VoidValue),
             // unwrap the value
             Self::Int(v) => Ok(v),
-            Self::IntPtr(v) => Ok(v)
+            Self::IntPtr(v) => {
+                let load = cur_func!(context).new_value(program).load(v);
+                cur_func!(context).push_inst(program, load);
+                Ok(load)
+            }
         }
+    }
+
+    pub fn into_ptr(self) -> Result<Value>{
+        match self {
+            Self::IntPtr(v) => Ok(v),
+            _ => Err(IRError::NotMemory)
+        }
+    }
+}
+
+impl<'ast> GenerateIR<'ast> for LVal {
+    type Out = ExpResult;
+    fn generate(&'ast self, program: &mut Program, context : &mut Context) 
+        -> Result<Self::Out> {
+            let var = cur_func!(context).require_val(&self.id).ok_or(IRError::UndefinedLVal((&self.id).to_string()))?;
+            Ok(ExpResult::IntPtr(var))
     }
 }
 
@@ -41,6 +62,16 @@ impl<'ast> GenerateIR<'ast> for Exp {
         self.lor.generate(program, context)
     }
 }
+
+
+impl<'ast> GenerateIR<'ast> for ConstExp {
+    type Out = ExpResult;
+    fn generate(&'ast self, program: &mut Program, context : &mut Context) 
+        -> Result<Self::Out> {
+        self.exp.generate(program, context)
+    }
+}
+
 
 impl<'ast> GenerateIR<'ast> for PrimaryExp {
     type Out = ExpResult;
@@ -53,7 +84,10 @@ impl<'ast> GenerateIR<'ast> for PrimaryExp {
                 ExpResult::Int(
                     context.get_current_func().new_value(program).integer(*num)
                 )
-            )
+            ),
+            Self::LVal(lval) => {
+                lval.generate(program, context)
+            } 
         }
     }    
 }
@@ -69,12 +103,11 @@ impl<'ast> GenerateIR<'ast> for UnaryExp {
                 
                 let exp_result = exp.generate(program, context)?;
 
-                let cur_func = context.get_current_func();
-                let zero = cur_func.new_value(program).integer(0);
+                let zero = cur_func!(context).new_value(program).integer(0);
                 
                 match op {
                     // +: Do nothing
-                    UnaryOp::Positive => Ok(ExpResult::Int(exp_result.into_int()?)),
+                    UnaryOp::Positive => Ok(exp_result),
                     // -: sub 0, %prev_exp (0 - %prev_exp)
                     // !: eq 0, %prev_exp (0 == %prev_exp)
                     UnaryOp::Negative | UnaryOp::LNot=> {
@@ -83,18 +116,10 @@ impl<'ast> GenerateIR<'ast> for UnaryExp {
                             UnaryOp::LNot => BinaryOp::Eq,
                             _ => unreachable!()
                         };
-                        if let ExpResult::Int(v) = exp_result {
-                            let num = opgen::calculate_in_advance(binary_op, 
-                            cur_func.get_value_data(program, zero), 
-                            cur_func.get_value_data(program, v))?;
-                            let res = cur_func.new_value(program).integer(num);
-                            Ok(ExpResult::Int(res))
-                        }
-                        else {
-                            let res = cur_func.new_value(program).binary(binary_op, zero, exp_result.into_int()?);
-                            cur_func.push_inst(program, res);
-                            Ok(ExpResult::IntPtr(res))
-                        }
+                        let rhs = exp_result.into_int(program, context)?;
+                        let res = cur_func!(context).new_value(program).binary(binary_op, zero, rhs);
+                        cur_func!(context).push_inst(program, res);
+                        Ok(ExpResult::Int(res))
                     },
                 }
             }
@@ -115,24 +140,14 @@ impl<'ast> $trait_name<'ast> for [<$cur Exp>]  {
         match self {
             [<$cur Exp>]::[<$prev Ausdruck>](a) => a.generate(program, context),
             [<$cur Exp>]::[<$cur Ausdruck>](lhs, op, rhs) => {
-                let lhs_res = lhs.generate(program, context)?;
-                let rhs_res = rhs.generate(program, context)?;
+                let lhs_res = lhs.generate(program, context)?.into_int(program, context)?;
+                let rhs_res = rhs.generate(program, context)?.into_int(program, context)?;
                 let binary_op = op.select_binary_op();
-                let cur_func = context.get_current_func();
-                if let (ExpResult::Int(l), ExpResult::Int(r)) =
-                (lhs_res, rhs_res){
-                    let num = opgen::calculate_in_advance(binary_op, 
-                        cur_func.get_value_data(program, l),
-                        cur_func.get_value_data(program, r))?;
-                    let res = cur_func.new_value(program).integer(num);
-                    Ok(ExpResult::Int(res))
-                } else {
-                    let res = cur_func.new_value(program).binary(binary_op, 
-                        lhs_res.into_int()?, 
-                        rhs_res.into_int()?);
-                    cur_func.push_inst(program, res);
-                    Ok(ExpResult::IntPtr(res))
-                }
+                let res = cur_func!(context).new_value(program).binary(binary_op, 
+                    lhs_res, 
+                    rhs_res);
+                cur_func!(context).push_inst(program, res);
+                Ok(ExpResult::Int(res))
             }
         }
     }
@@ -188,7 +203,7 @@ impl<'ast> $trait_name<'ast> for [<$cur Exp>]  {
                 // 1.push the initial result in current block
                 cur_func!(context).push_inst(program, store);
 
-                let lhs_result = lhs.generate(program, context)?.into_int()?;
+                let lhs_result = lhs.generate(program, context)?.into_int(program, context)?;
                 let lhs_comp_result = cur_func!(context).new_value(program).binary(binary_op, zero, lhs_result);
 
                 // 2.add compare result in current block
@@ -210,7 +225,7 @@ impl<'ast> $trait_name<'ast> for [<$cur Exp>]  {
                 cur_func!(context).add_new_block(program, next_block);
 
                 // 5. calculate right hand side and add instruction in next_block
-                let rhs_result = rhs.generate(program, context)?.into_int()?;
+                let rhs_result = rhs.generate(program, context)?.into_int(program, context)?;
                 let rhs_comp_result = cur_func!(context).new_value(program).binary(binary_op, zero, rhs_result);
 
                 cur_func!(context).push_inst(program, rhs_comp_result);

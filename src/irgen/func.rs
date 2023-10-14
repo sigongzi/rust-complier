@@ -3,6 +3,7 @@ use koopa::ir::builder::{LocalBuilder,LocalInstBuilder};
 use koopa::ir::builder_traits::BasicBlockBuilder;
 use koopa::ir::entities::{ValueData};
 use koopa::ir::{BasicBlock, Function, Program, Type};
+use std::collections::HashMap;
 
 
 
@@ -12,6 +13,7 @@ pub struct FunctionHandler {
     cur: BasicBlock,
     end: BasicBlock,
     ret: Option<Value>,
+    const_val : HashMap<String, Value>,
 }
 
 impl FunctionHandler {
@@ -21,7 +23,8 @@ impl FunctionHandler {
             entry,
             cur,
             end,
-            ret : None
+            ret : None,
+            const_val : HashMap::new()
         }
     }
 
@@ -115,5 +118,13 @@ impl FunctionHandler {
         }
     }
 
-    
+    // add const val into hash set
+    pub fn add_const_val(&mut self, name: String, val: Value) {
+        self.const_val.insert(name, val);
+    }
+
+    // require if the val is in const hashset 
+    pub fn require_val(&mut self, name: &str) -> Option<Value>{
+        self.const_val.get(name).copied()
+    }
 }

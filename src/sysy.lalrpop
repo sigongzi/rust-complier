@@ -15,8 +15,48 @@ match {
 
 
 
+
+// Full program
 pub CompUnit: CompUnit = <func_def: FuncDef> => CompUnit { <> };
 
+
+// Declare variable or const
+Decl : Decl = {
+  ConstDecl => Decl::Const(<>),
+  VarDecl => Decl::Var(<>)
+}
+
+BType : String = "int" => <>.to_string();
+
+ConstDecl : ConstDecl = "const" BType <def : ConstDef> <mut defs : ("," <ConstDef>)*> ";"=> {
+  defs.insert(0, def);
+  ConstDecl{defs}
+};
+
+// VarDecl       ::= BType VarDef {"," VarDef} ";";
+VarDecl : VarDecl = BType <def : VarDef> <mut defs : ("," <VarDef>)*> ";" => {
+  defs.insert(0, def);
+  VarDecl{defs}
+};
+
+// ConstDef      ::= IDENT "=" ConstInitVal;
+ConstDef : ConstDef = <id : Ident> "=" <init_val : ConstInitVal> => ConstDef{<>};
+
+// VarDef        ::= IDENT | IDENT "=" InitVal;
+VarDef  : VarDef =  {
+  <id: Ident> <init_val: ("=" <InitVal>)?> => {
+    VarDef {<>}
+  }
+};
+
+ConstInitVal : ConstInitVal = <exp : ConstExp> => ConstInitVal {<>};
+
+// InitVal       ::= Exp;
+InitVal : InitVal = <exp : Exp> => InitVal {<>};
+
+
+
+// Function Define and Type 
 FuncDef: FuncDef = {
   <func_type: FuncType> <ident: Ident> "(" ")" <block: Block> => {
     FuncDef { <> }
@@ -25,11 +65,23 @@ FuncDef: FuncDef = {
 
 FuncType: FuncType = "int" => FuncType::Int;
 
-Block: Block = "{" <stmt: Stmt> "}" => Block { <> };
 
-Stmt: Stmt = "return" <exp: Exp> ";" => Stmt { <> };
+// Block 
+Block: Block = "{" <items : (BlockItem)*> "}" => Block { <> };
+
+BlockItem : BlockItem = {
+  Decl => BlockItem::Decl(<>),
+  Stmt => BlockItem::Stmt(<>),
+}
+
+Stmt: Stmt = {
+  <lval : LVal> "=" <exp: Exp> ";" => Stmt::Assign(Assign{<>}),
+  "return" <exp: Exp> ";" => Stmt::Return(Return{<>}),
+}
 
 Number: i32 = <num: IntConst> => <>;
+
+LVal : LVal = <id: Ident> => LVal {<>};
 
 Exp: Exp = <lor: LOrExp> => Exp { <> };
 
@@ -37,6 +89,7 @@ Exp: Exp = <lor: LOrExp> => Exp { <> };
 PrimaryExp: PrimaryExp = {
   "(" <Exp> ")" => PrimaryExp::Ausdruck(Box::new(<>)),
   Number => PrimaryExp::Number(<>),
+  LVal => PrimaryExp::LVal(<>)
 }
 
 // 单元表达式
@@ -82,6 +135,9 @@ LOrExp: LOrExp = {
   <lhs: LOrExp> "||" <rhs: LAndExp> =>
     LOrExp::LOrAusdruck(Box::new(lhs), rhs)
 }
+
+// lv 4 const
+ConstExp : ConstExp = <exp : Exp> => ConstExp {<>};
 
 // Operator 优先级由高到低
 // 一元操作

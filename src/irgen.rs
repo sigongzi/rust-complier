@@ -24,8 +24,10 @@ pub enum IRError {
     // DerefInt,
     // ArgMismatch,
     // NonIntCalc,
+    NotMemory,
     AdvancedEvaluation(String),
-    VoidValue
+    VoidValue,
+    UndefinedLVal(String),
 }
 
 
@@ -33,7 +35,9 @@ impl fmt::Display for IRError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::VoidValue => write!(f,"use void value in an expression"),
-            Self::AdvancedEvaluation(s) => write!(f, "wrong when evaluate binary operator: {}", s)
+            Self::AdvancedEvaluation(s) => write!(f, "wrong when evaluate binary operator: {}", s),
+            Self::UndefinedLVal(s) => write!(f, "{} is undefined", s),
+            Self::NotMemory => write!(f, "store val in a place not memory")
         // Self::DuplicatedDef => write!(f, "duplicated symbol definition"),
         // Self::SymbolNotFound => write!(f, "symbol not found"),
         // Self::FailedToEval => write!(f, "failed to evaluate constant"),

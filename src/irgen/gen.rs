@@ -1,5 +1,7 @@
 mod expgen;
 mod opgen;
+mod declgen;
+mod stmtgen;
 use crate::{ast::*, cur_func};
 use koopa::ir::{builder_traits::*, TypeKind};
 use koopa::ir::{FunctionData, Program, Type};
@@ -66,7 +68,7 @@ impl<'ast> GenerateIR<'ast> for FuncDef {
         // alloc return in entry block(if have)
         match cur_func!(context).get_function_kind(program) {
             &TypeKind::Int32 => {
-                //println!("return type is i32");
+                println!("return type is i32");
                 let ret_val =  cur_func!(context).create_initial_variable(program, Type::get_i32(), Some("ret".into()));
 
                 let load = cur_func!(context).new_value(program).load(ret_val);
@@ -79,7 +81,7 @@ impl<'ast> GenerateIR<'ast> for FuncDef {
 
             },
             _ => {
-                //println!("return type is not i32");
+                println!("return type is not i32");
                 let ret = cur_func!(context).new_value(program).ret(None);
 
                 cur_func!(context).push_inst_to(program, end, ret);
@@ -111,37 +113,25 @@ impl<'ast> GenerateIR<'ast> for Block {
     type Out = ();
     fn generate(&'ast self, program: &mut Program, context : &mut Context) 
         -> Result<Self::Out> {
-        self.stmt.generate(program, context)?;
+        for item in self.items.iter() {
+            item.generate(program, context)?;
+        }
+        //self.stmt.generate(program, context)?;
         Ok(())
     }
 }
 
-impl<'ast> GenerateIR<'ast> for Stmt {
+impl<'ast> GenerateIR<'ast> for BlockItem {
     type Out = ();
     fn generate(&'ast self, program: &mut Program, context : &mut Context) 
         -> Result<Self::Out> {
-        // get expression result for return 
-        let exp_result = self.exp.generate(program, context)?;
-
-        let cur_func = context.get_current_func();
-        
-
-        // generate return command
-        let v = match exp_result {
-            ExpResult::Void => None,
-            ExpResult::Int(v) => Some(v),
-            ExpResult::IntPtr(v) => Some(v)
-        };
-        if let Some(val) = v {
-            let store = cur_func.new_value(program).store(val, 
-            cur_func.get_ret_value());
-            cur_func.push_inst(program, store);
-            
+        match self {
+            BlockItem::Decl(decl) => decl.generate(program, context)?,
+            BlockItem::Stmt(stmt) => stmt.generate(program, context)?
         }
-        let jump = cur_func.new_value(program).jump(cur_func.get_end());
-        cur_func.push_inst(program, jump);
         Ok(())
     }
 }
+
 
 
