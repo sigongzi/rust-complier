@@ -244,12 +244,12 @@ impl<'ast> $trait_name<'ast> for [<$cur Exp>]  {
                 // 8. add end_block as current block
                 cur_func!(context).add_new_block(program, end_block);
 
-                // 9. load the final result
+                /*// 9. load the final result
                 let load_result = cur_func!(context).new_value(program).load(final_result);
 
-                cur_func!(context).push_inst(program, load_result);
+                cur_func!(context).push_inst(program, load_result);*/
 
-                Ok(ExpResult::IntPtr(load_result))
+                Ok(ExpResult::IntPtr(final_result))
             }
         }
     }

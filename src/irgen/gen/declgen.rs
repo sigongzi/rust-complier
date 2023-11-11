@@ -84,6 +84,7 @@ impl<'ast> GenerateIR<'ast> for ConstDef {
     }
 }
 
+// generate IR for const val
 impl<'ast> GenerateIR<'ast> for ConstInitVal {
     type Out = ExpResult;
     fn generate(&'ast self, program: &mut Program, context : &mut Context) 
