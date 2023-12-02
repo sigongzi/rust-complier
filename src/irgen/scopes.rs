@@ -84,10 +84,10 @@ impl<'ast> Scopes<'ast> {
 
     // close end block of a function
     pub fn close_function(&mut self, end: BasicBlock) {
-        // [TODO]: How to handle no return block
-        //let end = self.get_end();
-        //let jump = self.new_value().jump(end);
-        //self.function_push_inst(jump);
+        let end = self.get_end();
+        let jump = self.new_value().jump(end);
+        self.function_push_inst(jump);
+        
         self.function_add_block(end);
         let res = match self.get_ret() {
             Some(v) => {

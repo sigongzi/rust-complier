@@ -76,10 +76,32 @@ BlockItem : BlockItem = {
 
 
 Stmt: Stmt = {
-  <lval : LVal> "=" <exp: Exp> ";" => Stmt::Assign(Assign{<>}),
+  MatchedStmt => <>,
+  OpenStmt => <>,
+  
+}
+
+MatchedStmt : Stmt = {
+  <lval : LVal> "=" <exp: Exp> ";" => Stmt::Assign(Assign{ <> }),
   "return" <exp: (Exp)?> ";" => Stmt::Return(Return{<>}),
   Block => Stmt::Block(<>),
-  <exp: (Exp)?> ";" =>  Stmt::ExpStmt(ExpStmt{<>})
+  <exp: (Exp)?> ";" =>  Stmt::ExpStmt(ExpStmt{<>}),
+  "if" "(" <condition : Exp >")" <then: MatchedStmt> 
+    "else" <else_then: MatchedStmt> => {
+      Stmt::If(Box::new(If {condition, then, else_then: Some(else_then)}))
+  },
+  //"break" ";" => Stmt::Break(Break),
+  //"continue" ";" => Stmt::Continue(Continue)
+}
+
+OpenStmt : Stmt = {
+  "if" "(" <condition: Exp> ")" <then: Stmt> => {
+    Stmt::If(Box::new(If {condition, then, else_then: None}))
+  },
+  "if" "(" <condition: Exp> ")" <then: MatchedStmt> "else" 
+    <else_then: OpenStmt> => {
+      Stmt::If(Box::new(If {condition, then, else_then: Some(else_then)}))
+    }
 }
 
 Number: i32 = <num: IntConst> => <>;

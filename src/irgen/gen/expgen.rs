@@ -227,7 +227,7 @@ impl<'ast> $trait_name<'ast> for [<$cur Exp>]  {
                 // 5. calculate right hand side and add instruction in next_block
                 let rhs_result = rhs.generate(scopes)?.into_int(scopes)?;
 
-                let rhs_comp_result = scopes.new_value().binary(binary_op, zero, rhs_result);
+                let rhs_comp_result = scopes.new_value().binary(BinaryOp::NotEq, zero, rhs_result);
 
                 scopes.function_push_inst(rhs_comp_result);
 
