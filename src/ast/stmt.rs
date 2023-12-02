@@ -11,7 +11,8 @@ pub enum Stmt {
     Block(Block),
     If(Box<If>),
     Break(Break),
-    Continue(Continue)
+    Continue(Continue),
+    While(Box<While>)
 }
 
 // [Exp] ";"
@@ -46,4 +47,10 @@ pub struct If {
     pub condition: Exp,
     pub then: Stmt,
     pub else_then: Option<Stmt>
+}
+
+#[derive(Debug)]
+pub struct While {
+    pub condition: Exp,
+    pub body: Stmt
 }

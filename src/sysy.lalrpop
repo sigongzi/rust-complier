@@ -90,8 +90,11 @@ MatchedStmt : Stmt = {
     "else" <else_then: MatchedStmt> => {
       Stmt::If(Box::new(If {condition, then, else_then: Some(else_then)}))
   },
-  //"break" ";" => Stmt::Break(Break),
-  //"continue" ";" => Stmt::Continue(Continue)
+  "break" ";" => Stmt::Break(Break),
+  "continue" ";" => Stmt::Continue(Continue),
+  "while" "(" <condition: Exp> ")" <body: MatchedStmt> => {
+    Stmt::While(Box::new(While { <> }))
+  },
 }
 
 OpenStmt : Stmt = {
@@ -101,7 +104,10 @@ OpenStmt : Stmt = {
   "if" "(" <condition: Exp> ")" <then: MatchedStmt> "else" 
     <else_then: OpenStmt> => {
       Stmt::If(Box::new(If {condition, then, else_then: Some(else_then)}))
-    }
+    },
+  "while" "(" <condition: Exp> ")" <body: OpenStmt> => {
+    Stmt::While(Box::new(While { <> }))
+  },
 }
 
 Number: i32 = <num: IntConst> => <>;

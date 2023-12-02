@@ -13,7 +13,8 @@ pub struct Scopes<'ast> {
     val_level: Vec<HashMap<&'ast str, Value>>,
     function_map: HashMap<&'ast str, Function>,
     pub program: &'ast mut Program,
-    pub cur_func: Option<FunctionInfo>
+    pub cur_func: Option<FunctionInfo>,
+    pub loop_level: Vec<(BasicBlock, BasicBlock)>
 } 
 
 impl<'ast> Scopes<'ast> {
@@ -22,7 +23,8 @@ impl<'ast> Scopes<'ast> {
             val_level: vec![],
             function_map: HashMap::new(),
             program,
-            cur_func: None
+            cur_func: None,
+            loop_level: vec![]
         }
     }
     pub fn record_function(&mut self, ident: &'ast str, func_id: Function) {
@@ -35,6 +37,27 @@ impl<'ast> Scopes<'ast> {
     pub fn minus_level(&mut self) {
         self.val_level.pop().unwrap();
     }
+
+    pub fn add_loop(&mut self, entry: BasicBlock, end: BasicBlock) {
+        self.loop_level.push((entry, end));
+    }
+    pub fn minus_loop(&mut self) {
+        self.loop_level.pop();
+    }
+
+    pub fn loop_start(&self) -> BasicBlock{
+        self.loop_level
+        .last()
+        .unwrap()
+        .0
+    }
+    pub fn loop_end(&self) -> BasicBlock{
+        self.loop_level
+        .last()
+        .unwrap()
+        .1
+    }
+
     pub fn get_func_id(&self) -> Function {
         self.cur_func.as_ref().unwrap().func
     }

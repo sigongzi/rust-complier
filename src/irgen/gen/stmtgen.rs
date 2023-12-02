@@ -25,7 +25,8 @@ impl<'ast> GenerateIR<'ast> for Stmt {
             Self::ExpStmt(e) => e.generate(scopes),
             Self::If(f) => f.generate(scopes),
             Self::Break(b) => b.generate(scopes),
-            Self::Continue(c) => c.generate(scopes)
+            Self::Continue(c) => c.generate(scopes),
+            Self::While(w) => w.generate(scopes)
         }
     }
 }
@@ -136,10 +137,65 @@ impl<'ast> GenerateIR<'ast> for If {
     }
 }
 
+impl<'ast> GenerateIR<'ast> for While {
+    type Out = ();
+    fn generate(&'ast self, scopes : &mut Scopes<'ast>) 
+        -> Result<Self::Out> {
+        let while_entry = scopes.create_new_block(Some("%While_entry".into()));
+        let while_body = scopes.create_new_block(Some("%While_body".into()));
+        
+        let while_end = scopes.create_new_block(Some("%While_end".into()));
+        let jump_entry = scopes.new_value().jump(while_entry);
+        scopes.function_push_inst(jump_entry);
+
+        // 1. create new loop context
+        scopes.add_loop(while_entry, while_end);
+
+        // 2. set current block as entry block
+
+        scopes.function_add_block(while_entry);
+
+        let cond_result = self
+        .condition
+        .generate(scopes)?
+        .into_int(scopes)?;
+
+        // 3. set branch instruction
+        let br = scopes.new_value().branch(cond_result, while_body, while_end);
+
+        scopes.function_push_inst(br);
+
+        
+        // 4. set current block as body block
+        scopes.function_add_block(while_body);
+
+        // 5. generate statement and seal it
+        self.body.generate(scopes);
+
+        let jump_entry = scopes.new_value().jump(while_entry);
+
+        scopes.function_push_inst(jump_entry);
+
+        // 6. exit loop
+        scopes.minus_loop();
+
+        // 7. set current block as end block
+
+        scopes.function_add_block(while_end);
+        Ok(())
+    }
+}
+
 impl<'ast> GenerateIR<'ast> for Break {
     type Out = ();
     fn generate(&'ast self, scopes : &mut Scopes<'ast>) 
         -> Result<Self::Out> {
+        let end_block = scopes.loop_end();
+        let jump = scopes.new_value().jump(end_block);
+        scopes.function_push_inst(jump);
+
+        let next_block = scopes.create_new_block(None);
+        scopes.function_add_block(next_block);
         Ok(())
     }
 }
@@ -148,6 +204,12 @@ impl<'ast> GenerateIR<'ast> for Continue {
     type Out = ();
     fn generate(&'ast self, scopes : &mut Scopes<'ast>) 
         -> Result<Self::Out> {
+        let start_block = scopes.loop_start();
+        let jump = scopes.new_value().jump(start_block);
+        scopes.function_push_inst(jump);
+
+        let next_block = scopes.create_new_block(None);
+        scopes.function_add_block(next_block);
         Ok(())
     }
 }
