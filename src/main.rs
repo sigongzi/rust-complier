@@ -1,4 +1,4 @@
-// cargo run -- -koopa hello.c -o hello.koopa
+// cargo run -- -koopa test/hello.c -o test/hello.koopa
 
 /// usage: compiler -[koopa/riscv/perf] <INPUT_FILE> -o <OUTPUT_FILE>
 /// test: autotest [-h] [-koopa | -riscv | -perf] [-t TEST_CASE_DIR] [-w WORKING_DIR] [-s SUB_DIR] repo_dir

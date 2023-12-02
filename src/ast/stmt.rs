@@ -1,16 +1,26 @@
-use super::{LVal,Exp};
+use super::{LVal,Exp, Block};
 ///Stmt          ::= LVal "=" Exp ";"
-///                | "return" Exp ";";
+///                | "return" [Exp] ";"
+///                | Block
+///                | [Exp] ";"
 #[derive(Debug)] 
 pub enum Stmt {
     Return(Return),
-    Assign(Assign)
+    Assign(Assign),
+    ExpStmt(ExpStmt),
+    Block(Block),
+}
+
+// [Exp] ";"
+#[derive(Debug)]
+pub struct ExpStmt {
+    pub exp: Option<Exp>
 }
 
 /// "return" Exp ";"
 #[derive(Debug)]
 pub struct Return {
-    pub exp : Exp
+    pub exp : Option<Exp>
 }
 
 /// LVal "=" Exp ";"

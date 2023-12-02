@@ -74,9 +74,12 @@ BlockItem : BlockItem = {
   Stmt => BlockItem::Stmt(<>),
 }
 
+
 Stmt: Stmt = {
   <lval : LVal> "=" <exp: Exp> ";" => Stmt::Assign(Assign{<>}),
-  "return" <exp: Exp> ";" => Stmt::Return(Return{<>}),
+  "return" <exp: (Exp)?> ";" => Stmt::Return(Return{<>}),
+  Block => Stmt::Block(<>),
+  <exp: (Exp)?> ";" =>  Stmt::ExpStmt(ExpStmt{<>})
 }
 
 Number: i32 = <num: IntConst> => <>;

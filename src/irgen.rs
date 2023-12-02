@@ -1,13 +1,13 @@
 mod gen;
+//mod _func;
 mod func;
-mod context;
-
+mod scopes;
 use crate::ast::CompUnit;
 use gen::GenerateIR;
 use koopa::ir::Program;
+use scopes::Scopes;
 use std::fmt;
 
-use self::context::Context;
 
 
 
@@ -60,6 +60,6 @@ pub type Result<T> = std::result::Result<T, IRError>;
 /// Generates Koopa IR program for the given compile unit (ASTs).
 pub fn generate_program(comp_unit: &CompUnit) -> Result<Program> {
     let mut program = Program::new();
-    comp_unit.generate(&mut program, &mut Context::new())?;
+    comp_unit.generate(&mut Scopes::new(&mut program))?;
     Ok(program)
 }
