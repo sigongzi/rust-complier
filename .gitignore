@@ -2,5 +2,6 @@
 .rustup/
 .devcontainer/
 .vscode/
-./seagomll.code-workspace
+seagomll.code-workspace
+Cargo.lock
 test/
