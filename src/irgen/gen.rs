@@ -5,11 +5,11 @@ mod stmtgen;
 mod funcgen;
 
 use crate::ast::*;
-use koopa::ir::{builder_traits::*, TypeKind};
-use koopa::ir::{FunctionData, Program, Type};
-use super::func::FunctionInfo;
+
+use koopa::ir::{Type};
+
 use super::scopes::Scopes;
-use super::{IResult, scopes};
+use super::{IResult};
 
 
 

@@ -2,7 +2,7 @@ use crate::ast::*;
 
 
 use koopa::ir::builder_traits::*;
-use koopa::ir::{Value, Program, Type, BinaryOp};
+use koopa::ir::{Value, Type, BinaryOp};
 use crate::irgen::scopes::{Scopes};
 use crate::irgen::{IResult, GenerateIR};
 use crate::irgen::IRError;

@@ -1,7 +1,7 @@
 use crate::ast::*;
 
 use koopa::ir::builder_traits::*;
-use koopa::ir::{Program, Type};
+use koopa::ir::{Type};
 use crate::irgen::scopes::Scopes;
 use crate::irgen::{IResult, GenerateIR};
 

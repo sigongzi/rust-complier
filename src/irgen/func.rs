@@ -19,15 +19,15 @@ impl FunctionInfo {
         }
     }
 
-    pub fn get_id(&self) -> Function {
-        self.func
-    }
+    // pub fn get_id(&self) -> Function {
+    //     self.func
+    // }
 
-    pub fn set_cur(&mut self, block_id : BasicBlock) {
-        self.cur = block_id;
-    }
+    // pub fn set_cur(&mut self, block_id : BasicBlock) {
+    //     self.cur = block_id;
+    // }
 
-    pub fn get_current_block(&self) -> BasicBlock {
-        self.cur
-    }
+    // pub fn get_current_block(&self) -> BasicBlock {
+    //     self.cur
+    // }
 }

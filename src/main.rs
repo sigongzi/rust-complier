@@ -12,7 +12,6 @@ mod codegen;
 mod commandarg;
 
 use koopa::back::KoopaGenerator;
-use koopa::ir::Program;
 use lalrpop_util::lalrpop_mod;
 use std::fs::read_to_string;
 use std::process::exit;
@@ -44,12 +43,12 @@ fn main() {
     }
 }
 
-fn get_text_ir(program : &Program) {
-    let mut gen = KoopaGenerator::new(Vec::new());
-    gen.generate_on(&program).unwrap();
-    let text_form_ir = std::str::from_utf8(&gen.writer()).unwrap().to_string();
-    println!("{}", text_form_ir);
-}
+// fn get_text_ir(program : &Program) {
+//     let mut gen = KoopaGenerator::new(Vec::new());
+//     gen.generate_on(&program).unwrap();
+//     let text_form_ir = std::str::from_utf8(&gen.writer()).unwrap().to_string();
+//     println!("{}", text_form_ir);
+// }
 
 fn try_main() -> Result<(), MainError> {
     // 解析命令行参数

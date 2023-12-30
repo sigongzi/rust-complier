@@ -1,4 +1,4 @@
-use koopa::ir::{Program, BasicBlock, Value, entities::ValueData, Function, Type};
+use koopa::ir::{Program, BasicBlock, Value, entities::ValueData, Function};
 use super::{func::{FunctionHandler,FuncVar}, CResult};
 
 #[macro_export]

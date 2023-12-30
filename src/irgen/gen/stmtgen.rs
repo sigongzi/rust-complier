@@ -2,12 +2,12 @@ use crate::ast::*;
 use crate::irgen::scopes::Scopes;
 
 
-use koopa::back::generator;
+
 use koopa::ir::builder_traits::*;
-use koopa::ir::{Program};
+
 use crate::irgen::{IResult, GenerateIR};
 
-use super::expgen::ExpResult;
+
 
 
 
@@ -102,7 +102,7 @@ impl<'ast> GenerateIR<'ast> for If {
                 scopes.function_add_block(then_block);
                 
                 // 4. generate body of then branch and seal it
-                self.then.generate(scopes);
+                self.then.generate(scopes)?;
                 
                 let jump_end = scopes.new_value().jump(end_block);
                 scopes.function_push_inst(jump_end);
@@ -111,7 +111,7 @@ impl<'ast> GenerateIR<'ast> for If {
                 scopes.function_add_block(else_block);
 
                 // 6. generate body of else branch and seal it
-                else_then.generate(scopes);
+                else_then.generate(scopes)?;
 
                 let jump_end1 = scopes.new_value().jump(end_block);
                 scopes.function_push_inst(jump_end1);
@@ -126,7 +126,7 @@ impl<'ast> GenerateIR<'ast> for If {
                 scopes.function_add_block(then_block);
                 
                 // 4. generate body of then branch and seal it
-                self.then.generate(scopes);
+                self.then.generate(scopes)?;
                 
                 let jump_end = scopes.new_value().jump(end_block);
                 scopes.function_push_inst(jump_end);

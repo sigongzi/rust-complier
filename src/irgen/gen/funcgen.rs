@@ -2,12 +2,12 @@ use crate::ast::*;
 use crate::irgen::scopes::Scopes;
 use crate::irgen::func::FunctionInfo;
 
-use koopa::back::generator;
+
 use koopa::ir::builder_traits::*;
-use koopa::ir::{Program, Type, FunctionData};
+use koopa::ir::{Type, FunctionData};
 use crate::irgen::{IResult, GenerateIR};
 
-use super::expgen::ExpResult;
+
 
 impl<'ast> FuncDef {
     // build the map from name to function (id) in advance
@@ -21,11 +21,11 @@ impl<'ast> FuncDef {
         let params_ty = self
         .params
         .iter()
-        .map(|p| Type::get_i32())
+        .map(|_p| Type::get_i32())
         .collect();
 
         // 2. create a new function
-        let mut function_data = FunctionData::new(format!("@{}", self.ident), 
+        let function_data = FunctionData::new(format!("@{}", self.ident), 
         params_ty ,ret_ty);
 
         let func = scopes.program.new_func(function_data);
@@ -127,7 +127,7 @@ impl<'ast> GenerateIR<'ast> for FuncDef {
 impl<'ast> GenerateIR<'ast> for FuncType {
     type Out = Type;
     
-    fn generate(&'ast self, scopes : &mut Scopes<'ast>) 
+    fn generate(&'ast self, _scopes : &mut Scopes<'ast>) 
         -> IResult<Self::Out> {
         Ok(
             match self {

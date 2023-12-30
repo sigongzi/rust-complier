@@ -4,7 +4,7 @@ use koopa::ir::{Value, Function, BasicBlock, Program, Type, FunctionData};
 use std::collections::HashMap;
 use std::vec::Vec;
 use super::func::FunctionInfo;
-use super::{IResult, IRError};
+
 
 // Value: ValueId
 // Function: FunctionId
@@ -125,7 +125,7 @@ impl<'ast> Scopes<'ast> {
     }
 
     // close end block of a function
-    pub fn close_function(&mut self, end: BasicBlock) {
+    pub fn close_function(&mut self, _end: BasicBlock) {
         let end = self.get_end();
         let jump = self.new_value().jump(end);
         self.function_push_inst(jump);

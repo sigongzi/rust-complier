@@ -1,5 +1,5 @@
 
-use koopa::ir::{Value, ValueKind, TypeKind, Type};
+use koopa::ir::{Value, ValueKind};
 use koopa::ir::values::{*};
 use koopa::ir::entities::ValueData;
 use crate::function_handler;
@@ -9,7 +9,7 @@ use crate::codegen::CResult;
 #[allow(unused_imports)]
 use super::GenerateAsm;
 use std::fs::File;
-use std::io::Write;
+
 
 
 /*

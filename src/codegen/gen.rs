@@ -2,7 +2,7 @@ mod valuegen;
 
 
 use valuegen::GenerateAsmValue;
-use koopa::ir::{FunctionData, Program, ValueKind, Type};
+use koopa::ir::{FunctionData, Program, ValueKind};
 use super::asmwriter::AsmWriter;
 use super::{CResult};
 use super::context::ProgramContext;
@@ -69,7 +69,7 @@ impl<'p> GenerateAsm<'p> for FunctionData{
                 }
             }
             a_size = a_size * 4;
-            let mut total = s_size + a_size + r_size;
+            let total = s_size + a_size + r_size;
             if total == 0 {(0, r_size)}
             else {
                 (
