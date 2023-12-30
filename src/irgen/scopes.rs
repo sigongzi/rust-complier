@@ -1,10 +1,10 @@
 use koopa::ir::builder::LocalBuilder;
 use koopa::ir::builder_traits::{LocalInstBuilder, BasicBlockBuilder};
-use koopa::ir::{Value, Function, BasicBlock, Program, Type};
+use koopa::ir::{Value, Function, BasicBlock, Program, Type, FunctionData};
 use std::collections::HashMap;
 use std::vec::Vec;
 use super::func::FunctionInfo;
-use super::{Result, IRError};
+use super::{IResult, IRError};
 
 // Value: ValueId
 // Function: FunctionId
@@ -80,6 +80,25 @@ impl<'ast> Scopes<'ast> {
 
     pub fn get_ret(&self) -> Option<Value> {
         self.cur_func.as_ref().unwrap().ret
+    }
+
+    pub fn get_global_function(&self, name: &'ast str) -> Function {
+        self
+        .function_map
+        .get(name)
+        .unwrap()
+        .clone()
+    }
+
+    // get value type from current function
+    pub fn get_value_type(&self, value: Value) -> Type {
+        self
+        .program
+        .func(self.get_func_id())
+        .dfg()
+        .value(value)
+        .ty()
+        .clone()
     }
 
     pub fn retrieve_val(&self, s: &str) -> Option<Value>{
@@ -180,5 +199,15 @@ impl<'ast> Scopes<'ast> {
         .last_mut()
         .unwrap()
         .insert(name, val);
+    }
+
+    // declare sysl library function
+    pub fn decl_func(&mut self, name: &'ast str, params_ty: Vec<Type>, ret_ty: Type) {
+        let func = self.program.new_func(
+            FunctionData::new_decl(format!("@{}",name), params_ty, ret_ty)
+        );
+        self
+        .function_map
+        .insert(name, func);
     }
 }

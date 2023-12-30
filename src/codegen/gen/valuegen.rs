@@ -1,14 +1,15 @@
 
-use koopa::ir::{Value, ValueKind};
+use koopa::ir::{Value, ValueKind, TypeKind, Type};
 use koopa::ir::values::{*};
 use koopa::ir::entities::ValueData;
 use crate::function_handler;
 use crate::codegen::asmwriter::{AsmWriter};
 use crate::codegen::context::ProgramContext;
-use crate::codegen::Result;
+use crate::codegen::CResult;
 #[allow(unused_imports)]
 use super::GenerateAsm;
 use std::fs::File;
+use std::io::Write;
 
 
 /*
@@ -31,11 +32,11 @@ impl GenerateAsm for Return {
 
 pub trait GenerateAsmValue<'p> {
     type Out;
-    fn generate_asm(&self, f : &'p mut File, context : &'p mut ProgramContext, value : &Value) -> Result<Self::Out>;
+    fn generate_asm(&self, f : &'p mut File, context : &'p mut ProgramContext, value : &Value) -> CResult<Self::Out>;
 }
 impl<'p> GenerateAsmValue<'p> for ValueData {
     type Out = ();
-    fn generate_asm(&self, f : &'p mut File, context : &'p mut ProgramContext, value : &Value) -> Result<Self::Out> {
+    fn generate_asm(&self, f : &'p mut File, context : &'p mut ProgramContext, value : &Value) -> CResult<Self::Out> {
         match self.kind() {
             ValueKind::Jump(v) => v.generate_asm(f, context, value),
             ValueKind::Store(v) => v.generate_asm(f, context, value),
@@ -43,6 +44,7 @@ impl<'p> GenerateAsmValue<'p> for ValueData {
             ValueKind::Return(v) => v.generate_asm(f, context, value),
             ValueKind::Branch(v) => v.generate_asm(f, context, value),
             ValueKind::Binary(v) => v.generate_asm(f, context, value),
+            ValueKind::Call(v) => v.generate_asm(f, context, value),
             /*
             
             ValueKind::Binary(v) => v.generate(f, info, self),
@@ -58,7 +60,7 @@ impl<'p> GenerateAsmValue<'p> for ValueData {
 
 impl<'p> GenerateAsmValue<'p> for Jump {
     type Out = ();
-    fn generate_asm(&self, f : &'p mut File, context : &'p mut ProgramContext, _v : &Value) -> Result<Self::Out> {
+    fn generate_asm(&self, f : &'p mut File, context : &'p mut ProgramContext, _v : &Value) -> CResult<Self::Out> {
         let asm = AsmWriter::new();
         let name = function_handler!(context).get_basic_block_name(self.target());
         asm.jump(f, name)?;
@@ -68,7 +70,7 @@ impl<'p> GenerateAsmValue<'p> for Jump {
 
 impl<'p> GenerateAsmValue<'p> for Store {
     type Out = ();
-    fn generate_asm(&self, f : &'p mut File, context : &'p mut ProgramContext, _value : &Value) -> Result<Self::Out> {
+    fn generate_asm(&self, f : &'p mut File, context : &'p mut ProgramContext, _value : &Value) -> CResult<Self::Out> {
         let asm = AsmWriter::new();
         let tmp = "t2";
         asm.load(f, context, &(self.value()), tmp)?;
@@ -80,7 +82,7 @@ impl<'p> GenerateAsmValue<'p> for Store {
 
 impl<'p> GenerateAsmValue<'p> for Load {
     type Out = ();
-    fn generate_asm(&self, f : &'p mut File, context : &'p mut ProgramContext, value : &Value) -> Result<Self::Out> {
+    fn generate_asm(&self, f : &'p mut File, context : &'p mut ProgramContext, value : &Value) -> CResult<Self::Out> {
         let asm = AsmWriter::new();
         let tmp = "t2";
         asm.load(f, context, &(self.src()), tmp)?;
@@ -91,7 +93,7 @@ impl<'p> GenerateAsmValue<'p> for Load {
 
 impl<'p> GenerateAsmValue<'p> for Return {
     type Out = ();
-    fn generate_asm(&self, f : &'p mut File, context : &'p mut ProgramContext, _value : &Value) -> Result<Self::Out> {
+    fn generate_asm(&self, f : &'p mut File, context : &'p mut ProgramContext, _value : &Value) -> CResult<Self::Out> {
         let asm = AsmWriter::new();
         match self.value() {
             Some(v) => {
@@ -105,9 +107,32 @@ impl<'p> GenerateAsmValue<'p> for Return {
     }
 }
 
+impl<'p> GenerateAsmValue<'p> for Call {
+    type Out = ();
+    fn generate_asm(&self, f : &'p mut File, context : &'p mut ProgramContext, value : &Value) -> CResult<Self::Out> {
+        let asm = AsmWriter::new();
+        for (id, param) in self.args().iter().take(8).enumerate() {
+            asm.load(f, context, param, format!("a{}",id).as_str())?;
+        }
+
+        for (id, param) in self.args().iter().skip(8).enumerate() {
+            asm.load(f, context, param, "t0")?;
+            asm.store_to_stack(f, "t0", id * 4)?;
+        }
+        asm.call(f, context, self.callee())?;
+        // println!("the name of function is {}", context.get_function_name(self.callee()) );
+        // println!("if the type is 32? {}",context.get_function_type(self.callee()).is_i32());
+        // println!("what is the type? {}", context.get_function_type(self.callee()));
+        // println!("what is the typekind? {}", context.get_function_type(self.callee()).kind());
+
+        asm.store(f, context, value, "a0")?;
+        Ok(())
+    }
+}
+
 impl<'p> GenerateAsmValue<'p> for Branch {
     type Out = ();
-    fn generate_asm(&self, f : &'p mut File, context : &'p mut ProgramContext, _value : &Value) -> Result<Self::Out> {
+    fn generate_asm(&self, f : &'p mut File, context : &'p mut ProgramContext, _value : &Value) -> CResult<Self::Out> {
         let asm = AsmWriter::new();
         let tmp = "t2";
         asm.load(f, context, &(self.cond()), tmp)?;
@@ -120,7 +145,7 @@ impl<'p> GenerateAsmValue<'p> for Branch {
 
 impl<'p> GenerateAsmValue<'p> for Binary {
     type Out = ();
-    fn generate_asm(&self, f : &'p mut File, context : &'p mut ProgramContext, value : &Value) -> Result<Self::Out> {
+    fn generate_asm(&self, f : &'p mut File, context : &'p mut ProgramContext, value : &Value) -> CResult<Self::Out> {
         let asmwriter = AsmWriter::new();
         asmwriter.load(f, context, &(self.lhs()), "t0")?;
         asmwriter.load(f, context, &(self.rhs()), "t1")?;
@@ -152,7 +177,7 @@ impl<'p> GenerateAsmValue<'p> for Binary {
                 asmwriter.seqz(f, "t2", "t2")?;
                 asmwriter.sgt(f, "t0", "t1", "t1")?;
                 asmwriter.or(f, "t1", "t2", "t2")?;
-            }
+            },
             _ => ()
         }
         asmwriter.store(f, context, value, "t2")?;

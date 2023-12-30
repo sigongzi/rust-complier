@@ -5,7 +5,7 @@ use crate::irgen::scopes::Scopes;
 use koopa::back::generator;
 use koopa::ir::builder_traits::*;
 use koopa::ir::{Program};
-use crate::irgen::{Result, GenerateIR};
+use crate::irgen::{IResult, GenerateIR};
 
 use super::expgen::ExpResult;
 
@@ -16,7 +16,7 @@ use super::expgen::ExpResult;
 impl<'ast> GenerateIR<'ast> for Stmt {
     type Out = ();
     fn generate(&'ast self, scopes : &mut Scopes<'ast>) 
-        -> Result<Self::Out> {
+        -> IResult<Self::Out> {
         // get expression result for return 
         match self {
             Self::Return(r) => r.generate(scopes),
@@ -34,7 +34,7 @@ impl<'ast> GenerateIR<'ast> for Stmt {
 impl<'ast> GenerateIR<'ast> for Return {
     type Out = ();
     fn generate(&'ast self, scopes : &mut Scopes<'ast>) 
-        -> Result<Self::Out> {
+        -> IResult<Self::Out> {
             match &self.exp {
                 Some(e) => {
                     let res = e.generate(scopes)?.into_int(scopes)?;
@@ -58,7 +58,7 @@ impl<'ast> GenerateIR<'ast> for Return {
 impl<'ast> GenerateIR<'ast> for Assign {
     type Out = ();
     fn generate(&'ast self, scopes : &mut Scopes<'ast>) 
-        -> Result<Self::Out> {
+        -> IResult<Self::Out> {
             let res = self.exp.generate(scopes)?.into_int(scopes)?; 
             let dest = self.lval.generate(scopes)?.into_ptr()?;
             let store = scopes.new_value().store(res, dest);
@@ -70,7 +70,7 @@ impl<'ast> GenerateIR<'ast> for Assign {
 impl<'ast> GenerateIR<'ast> for ExpStmt {
     type Out = ();
     fn generate(&'ast self, scopes : &mut Scopes<'ast>) 
-        -> Result<Self::Out> {
+        -> IResult<Self::Out> {
         if let Some(e) = &self.exp {
             e.generate(scopes)?;
         }
@@ -81,7 +81,7 @@ impl<'ast> GenerateIR<'ast> for ExpStmt {
 impl<'ast> GenerateIR<'ast> for If {
     type Out = ();
     fn generate(&'ast self, scopes : &mut Scopes<'ast>) 
-        -> Result<Self::Out> {
+        -> IResult<Self::Out> {
         let cond_result = self
         .condition
         .generate(scopes)?.into_int(scopes)?;
@@ -140,7 +140,7 @@ impl<'ast> GenerateIR<'ast> for If {
 impl<'ast> GenerateIR<'ast> for While {
     type Out = ();
     fn generate(&'ast self, scopes : &mut Scopes<'ast>) 
-        -> Result<Self::Out> {
+        -> IResult<Self::Out> {
         let while_entry = scopes.create_new_block(Some("%While_entry".into()));
         let while_body = scopes.create_new_block(Some("%While_body".into()));
         
@@ -170,7 +170,7 @@ impl<'ast> GenerateIR<'ast> for While {
         scopes.function_add_block(while_body);
 
         // 5. generate statement and seal it
-        self.body.generate(scopes);
+        self.body.generate(scopes)?;
 
         let jump_entry = scopes.new_value().jump(while_entry);
 
@@ -189,7 +189,7 @@ impl<'ast> GenerateIR<'ast> for While {
 impl<'ast> GenerateIR<'ast> for Break {
     type Out = ();
     fn generate(&'ast self, scopes : &mut Scopes<'ast>) 
-        -> Result<Self::Out> {
+        -> IResult<Self::Out> {
         let end_block = scopes.loop_end();
         let jump = scopes.new_value().jump(end_block);
         scopes.function_push_inst(jump);
@@ -203,7 +203,7 @@ impl<'ast> GenerateIR<'ast> for Break {
 impl<'ast> GenerateIR<'ast> for Continue {
     type Out = ();
     fn generate(&'ast self, scopes : &mut Scopes<'ast>) 
-        -> Result<Self::Out> {
+        -> IResult<Self::Out> {
         let start_block = scopes.loop_start();
         let jump = scopes.new_value().jump(start_block);
         scopes.function_push_inst(jump);

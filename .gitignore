@@ -1,1 +1,6 @@
 /target
+.rustup/
+.devcontainer/
+.vscode/
+./seagomll.code-workspace
+test/

@@ -21,11 +21,17 @@ pub enum PrimaryExp {
     LVal(LVal)
 }
 
-/// UnaryExp   ::= PrimaryExp | UnaryOp UnaryExp;
+/// UnaryExp   ::= PrimaryExp | UnaryOp UnaryExp | IDENT "(" [FuncRParams] ")"
 #[derive(Debug)]
 pub enum UnaryExp {
     PrimaryAusdruck(PrimaryExp),
-    UnaryAusdruck(UnaryOp, Box<UnaryExp>)
+    UnaryAusdruck(UnaryOp, Box<UnaryExp>),
+    Call(FuncCall)
+}
+#[derive(Debug)]
+pub struct FuncCall {
+    pub id : String,
+    pub params: Vec<Exp>
 }
 
 /// MulExp      ::= UnaryExp | MulExp MulOp UnaryExp;

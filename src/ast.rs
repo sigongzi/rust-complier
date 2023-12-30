@@ -8,26 +8,36 @@ pub use decl::{*};
 /// CompUnit  ::= FuncDef;
 #[derive(Debug)]
 pub struct CompUnit {
-    pub func_def: FuncDef,
+    pub func_def: Vec<FuncDef>,
 }
 
 
 
 
-/// FuncDef   ::= FuncType IDENT "(" ")" Block;
+/// FuncDef   ::= FuncType IDENT "(" [FuncFParams] ")" Block;
+
+
 #[derive(Debug)]
 pub struct FuncDef {
-    pub func_type: FuncType,
-    
+    pub ty: FuncType,
+    pub params : Vec<FuncFParam>,
     pub ident: String,
     pub block: Block,
+}
+
+
+/// FuncFParam ::= BType IDENT;
+#[derive(Debug)]
+pub struct  FuncFParam {
+    pub id : String
 }
 
 
 /// FuncType  ::= "int";
 #[derive(Debug)]
 pub enum FuncType {
-    Int
+    Int,
+    Void
 }
 
 //Block         ::= "{" {BlockItem*} "}";

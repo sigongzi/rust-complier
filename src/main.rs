@@ -1,9 +1,11 @@
 // cargo run -- -koopa test/hello.c -o test/hello.koopa
-
+// cargo run -- -riscv test/hello.c -o test/hello.s
 /// usage: compiler -[koopa/riscv/perf] <INPUT_FILE> -o <OUTPUT_FILE>
 /// test: autotest [-h] [-koopa | -riscv | -perf] [-t TEST_CASE_DIR] [-w WORKING_DIR] [-s SUB_DIR] repo_dir
-/// test lv3 : autotest -koopa -s lv3 ./
-/// autotest -riscv -s lv3 ./
+/// test lv8 : autotest -koopa -s lv8 ./
+/// autotest -riscv -s lv8 ./
+
+
 mod ast;
 mod irgen;
 mod codegen;
@@ -66,14 +68,14 @@ fn try_main() -> Result<(), MainError> {
     .parse(&input).map_err(|_| MainError::Parse)?;
 
     // 输出解析得到的 AST
-    println!("{:#?}", comp_unit);
+    //println!("{:#?}", comp_unit);
     
     // 2. ir generator
     let program = irgen::generate_program(&comp_unit).map_err(MainError::IR)?;
 
 
     // 输出生成的ir（用来调试）
-    get_text_ir(&program);
+    // get_text_ir(&program);
 
     // If mode is koopa, generate koopa in the target file
     if matches!(mode, Mode::Koopa) {

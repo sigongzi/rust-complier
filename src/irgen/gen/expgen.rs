@@ -4,7 +4,7 @@ use crate::ast::*;
 use koopa::ir::builder_traits::*;
 use koopa::ir::{Value, Program, Type, BinaryOp};
 use crate::irgen::scopes::{Scopes};
-use crate::irgen::{Result, GenerateIR};
+use crate::irgen::{IResult, GenerateIR};
 use crate::irgen::IRError;
 use paste::paste;
 use super::opgen::{SelectBinaryOp};
@@ -22,7 +22,7 @@ pub enum ExpResult {
 }
 
 impl ExpResult {
-    pub fn into_int(self, scopes: &mut Scopes) -> Result<Value> {
+    pub fn into_int(self, scopes: &mut Scopes) -> IResult<Value> {
         match self {
             // there is an error when expresult is void
             Self::Void => Err(IRError::VoidValue),
@@ -36,7 +36,7 @@ impl ExpResult {
         }
     }
 
-    pub fn into_ptr(self) -> Result<Value>{
+    pub fn into_ptr(self) -> IResult<Value>{
         match self {
             Self::IntPtr(v) => Ok(v),
             _ => Err(IRError::NotMemory)
@@ -47,7 +47,7 @@ impl ExpResult {
 impl<'ast> GenerateIR<'ast> for LVal {
     type Out = ExpResult;
     fn generate(&'ast self, scopes : &mut Scopes) 
-        -> Result<Self::Out> {
+        -> IResult<Self::Out> {
 
             
             let var = scopes.retrieve_val(&self.id).ok_or(IRError::UndefinedLVal(self.id.clone()))?;
@@ -58,7 +58,7 @@ impl<'ast> GenerateIR<'ast> for LVal {
 impl<'ast> GenerateIR<'ast> for Exp {
     type Out = ExpResult;
     fn generate(&'ast self, scopes : &mut Scopes<'ast>) 
-        -> Result<Self::Out> {
+        -> IResult<Self::Out> {
         self.lor.generate(scopes)
     }
 }
@@ -67,7 +67,7 @@ impl<'ast> GenerateIR<'ast> for Exp {
 impl<'ast> GenerateIR<'ast> for ConstExp {
     type Out = ExpResult;
     fn generate(&'ast self, scopes : &mut Scopes<'ast>) 
-        -> Result<Self::Out> {
+        -> IResult<Self::Out> {
         self.exp.generate(scopes)
     }
 }
@@ -76,7 +76,7 @@ impl<'ast> GenerateIR<'ast> for ConstExp {
 impl<'ast> GenerateIR<'ast> for PrimaryExp {
     type Out = ExpResult;
     fn generate(&'ast self, scopes : &mut Scopes<'ast>) 
-        -> Result<Self::Out> {
+        -> IResult<Self::Out> {
         match self {
             Self::Ausdruck(exp) => exp.generate(scopes),
             // return primary number
@@ -95,7 +95,7 @@ impl<'ast> GenerateIR<'ast> for PrimaryExp {
 impl<'ast> GenerateIR<'ast> for UnaryExp {
     type Out = ExpResult;
     fn generate(&'ast self, scopes : &mut Scopes<'ast>)
-        -> Result<Self::Out> {
+        -> IResult<Self::Out> {
         match self {
             Self::PrimaryAusdruck(p) => p.generate(scopes),
             Self::UnaryAusdruck(op, exp) => {
@@ -121,12 +121,33 @@ impl<'ast> GenerateIR<'ast> for UnaryExp {
                         Ok(ExpResult::Int(res))
                     },
                 }
-            }
+            },
+            Self::Call(call) => call.generate(scopes)
         }
         
     }
 }
 
+impl<'ast> GenerateIR<'ast> for FuncCall {
+    type Out = ExpResult;
+    fn generate(&'ast self, scopes : &mut Scopes<'ast>) 
+        -> IResult<Self::Out> {
+
+        let callee = scopes.get_global_function(self.id.as_str()); 
+        let args  = self.params
+        .iter()
+        .map(|p| {
+                let res = p.generate(scopes)?.into_int(scopes)?;
+                Ok(res)
+            }
+        )
+        .collect::<IResult<Vec<_> > >()?;
+
+        let call = scopes.new_value().call(callee, args);
+        scopes.function_push_inst(call);
+        Ok(ExpResult::Int(call))
+    }
+}
 
 // generate trait for all binary expression
 macro_rules! implement_trait_for_binary_expression {
@@ -136,7 +157,7 @@ macro_rules! implement_trait_for_binary_expression {
 impl<'ast> $trait_name<'ast> for [<$cur Exp>]  {
     type Out = ExpResult;
     fn generate(&'ast self, scopes : &mut Scopes<'ast>) 
-        -> Result<Self::Out> {
+        -> IResult<Self::Out> {
         match self {
             [<$cur Exp>]::[<$prev Ausdruck>](a) => a.generate(scopes),
             [<$cur Exp>]::[<$cur Ausdruck>](lhs, op, rhs) => {
@@ -174,7 +195,7 @@ macro_rules! implement_trait_for_logic_expression {
 impl<'ast> $trait_name<'ast> for [<$cur Exp>]  {
     type Out = ExpResult;
     fn generate(&'ast self, scopes : &mut Scopes<'ast>) 
-        -> Result<Self::Out> {
+        -> IResult<Self::Out> {
         match self {
             [<$cur Exp>]::[<$prev Ausdruck>](a) => a.generate(scopes),
             [<$cur Exp>]::[<$cur Ausdruck>](lhs, rhs) => {

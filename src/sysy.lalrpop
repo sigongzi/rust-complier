@@ -17,7 +17,7 @@ match {
 
 
 // Full program
-pub CompUnit: CompUnit = <func_def: FuncDef> => CompUnit { <> };
+pub CompUnit: CompUnit = <func_def : (FuncDef)* > => CompUnit { <> };
 
 
 // Declare variable or const
@@ -56,15 +56,30 @@ InitVal : InitVal = <exp : Exp> => InitVal {<>};
 
 
 
-// Function Define and Type 
-FuncDef: FuncDef = {
-  <func_type: FuncType> <ident: Ident> "(" ")" <block: Block> => {
-    FuncDef { <> }
+// Function Define , Parameter and Type
+FuncFParam : FuncFParam = {
+  BType <id: Ident> => {
+    FuncFParam { <> }
   }
 }
 
-FuncType: FuncType = "int" => FuncType::Int;
 
+FuncDef: FuncDef = {
+  <ty: FuncType> <ident : Ident> "(" ")" <block : Block> => {
+    FuncDef {ty , ident , params : Vec::new(), block}
+  },
+  <ty: FuncType> <ident : Ident> "("
+    <func_param : FuncFParam> <mut func_params : ("," <FuncFParam>)*>
+  ")" <block: Block> => {
+    func_params.insert(0, func_param);
+    FuncDef {ty , ident, params : func_params, block}
+  }
+}
+
+FuncType: FuncType = {
+  "int" => FuncType::Int,
+  "void" => FuncType::Void
+}
 
 // Block 
 Block: Block = "{" <items : (BlockItem)*> "}" => Block { <> };
@@ -126,6 +141,13 @@ PrimaryExp: PrimaryExp = {
 // 单元表达式
 UnaryExp: UnaryExp = {
   PrimaryExp => UnaryExp::PrimaryAusdruck(<>),
+  <id : Ident> "(" ")" => {
+    UnaryExp::Call(FuncCall { id, params: Vec::new() })
+  },
+  <id : Ident> "(" <exp : Exp> <mut exps : ("," <Exp>)*> ")" => {
+    exps.insert(0, exp);
+    UnaryExp::Call(FuncCall { id, params: exps })
+  },
   <op: UnaryOp> <exp: UnaryExp> => UnaryExp::UnaryAusdruck(op, Box::new(exp)),
 }
 

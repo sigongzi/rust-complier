@@ -9,8 +9,8 @@ use std::fs::File;
 use self::context::ProgramContext;
 use self::gen::GenerateAsm;
 
-pub type Result<T> = std::result::Result<T, GenerateError>;
-pub fn generate_asm(program : &Program, path : &str) -> Result<()> {
+pub type CResult<T> = std::result::Result<T, GenerateError>;
+pub fn generate_asm(program : &Program, path : &str) -> CResult<()> {
     
     program.generate_asm(&mut File::create(path)?, &mut ProgramContext::new(program))?;
     Ok(())

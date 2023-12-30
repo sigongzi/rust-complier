@@ -33,10 +33,10 @@ impl fmt::Display for IRError {
 }
 
 /// Result type of IR generator.
-pub type Result<T> = std::result::Result<T, IRError>;
+pub type IResult<T> = std::result::Result<T, IRError>;
 
 /// Generates Koopa IR program for the given compile unit (ASTs).
-pub fn generate_program(comp_unit: &CompUnit) -> Result<Program> {
+pub fn generate_program(comp_unit: &CompUnit) -> IResult<Program> {
     let mut program = Program::new();
     comp_unit.generate(&mut Scopes::new(&mut program))?;
     Ok(program)
