@@ -5,12 +5,17 @@ use std::collections::HashMap;
 use std::vec::Vec;
 use super::func::FunctionInfo;
 
+#[derive(Clone)]
+pub enum RecValue {
+    Const(i32),
+    IrValue(Value)
+}
 
 // Value: ValueId
 // Function: FunctionId
 // both need program to find their entities
 pub struct Scopes<'ast> {
-    val_level: Vec<HashMap<&'ast str, Value>>,
+    val_level: Vec<HashMap<&'ast str, RecValue>>,
     function_map: HashMap<&'ast str, Function>,
     pub program: &'ast mut Program,
     pub cur_func: Option<FunctionInfo>,
@@ -92,16 +97,22 @@ impl<'ast> Scopes<'ast> {
 
     // get value type from current function
     pub fn get_value_type(&self, value: Value) -> Type {
-        self
-        .program
-        .func(self.get_func_id())
-        .dfg()
-        .value(value)
-        .ty()
-        .clone()
+        // if the value is the global variable
+        if value.is_global() {
+            self.program.borrow_value(value).ty().clone()
+        } else {
+            self
+            .program
+            .func(self.get_func_id())
+            .dfg()
+            .value(value)
+            .ty()
+            .clone()
+        }
     }
 
-    pub fn retrieve_val(&self, s: &str) -> Option<Value>{
+    // symbol table function
+    pub fn retrieve_val(&self, s: &str) -> Option<RecValue>{
         for h in self.val_level.iter().rev() {
             if let Some(v) = h.get(s) {
                 return Some(v.clone());
@@ -117,6 +128,7 @@ impl<'ast> Scopes<'ast> {
         .new_value()
     }
 
+    
     // close entry of a function
     pub fn close_entry(&mut self, next: BasicBlock) {
         let jump = self.new_value().jump(next);
@@ -193,12 +205,19 @@ impl<'ast> Scopes<'ast> {
         .basic_block(name)
     }
 
-    // add const val into hash set
-    pub fn add_variable_name(&mut self, name: &'ast str, val: Value) {
+    // add const variable into hash set
+    pub fn add_const_value_name(&mut self, name: &'ast str, val: i32) {
         self.val_level
         .last_mut()
         .unwrap()
-        .insert(name, val);
+        .insert(name, RecValue::Const(val));
+    }
+
+    pub fn add_variable_name(&mut self, name: &'ast str, val : Value) {
+        self.val_level
+        .last_mut()
+        .unwrap()
+        .insert(name, RecValue::IrValue(val));
     }
 
     // declare sysl library function
@@ -209,5 +228,11 @@ impl<'ast> Scopes<'ast> {
         self
         .function_map
         .insert(name, func);
+    }
+
+    // check if it is the global scope
+
+    pub fn is_global(&self) -> bool {
+        self.val_level.len() == 1
     }
 }

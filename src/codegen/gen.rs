@@ -8,6 +8,7 @@ use super::{CResult};
 use super::context::ProgramContext;
 use super::func::FunctionHandler;
 use std::fs::File;
+use std::io::Write;
 use std::cmp;
 
 // A unified trait for all the memory structure in Program
@@ -22,8 +23,17 @@ impl<'p> GenerateAsm<'p> for Program {
     type Out = ();
 
     fn generate_asm(&self, f : &'p mut File, context : &'p mut ProgramContext) -> CResult<Self::Out> {
-        
-
+        // generate global allocation
+        for &value in self.inst_layout() {
+            let data = self.borrow_value(value);
+            let name = &data.name().as_ref().unwrap()[1..];
+            context.add_global_var(value, name);
+            writeln!(f, "  .data")?;
+            writeln!(f, "  .globl {}",name)?;
+            writeln!(f, "{}:", name)?;
+            data.generate_asm(f, context, &value)?;
+            writeln!(f)?;
+        }
         // generate function
         for &func in self.func_layout() {
             context.func = Some(func);

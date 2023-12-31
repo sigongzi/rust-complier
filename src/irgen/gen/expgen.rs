@@ -1,9 +1,10 @@
 use crate::ast::*;
+use crate::irgen::constcalc::PreCalculate;
 
 
-use koopa::ir::builder_traits::*;
+use koopa::ir::{builder_traits::*, TypeKind};
 use koopa::ir::{Value, Type, BinaryOp};
-use crate::irgen::scopes::{Scopes};
+use crate::irgen::scopes::{Scopes, RecValue};
 use crate::irgen::{IResult, GenerateIR};
 use crate::irgen::IRError;
 use paste::paste;
@@ -51,7 +52,24 @@ impl<'ast> GenerateIR<'ast> for LVal {
 
             
             let var = scopes.retrieve_val(&self.id).ok_or(IRError::UndefinedLVal(self.id.clone()))?;
-            Ok(ExpResult::IntPtr(var))
+
+            match var {
+                RecValue::Const(v) => Ok(ExpResult::Int(
+                    scopes.new_value().integer(v)
+                )),
+                RecValue::IrValue(v) => {
+                    match scopes.get_value_type(v).kind() {
+                        TypeKind::Pointer(_) => {
+                            Ok(ExpResult::IntPtr(v))
+                        },
+                        TypeKind::Array(_, _) => unimplemented!(),
+                        TypeKind::Int32 => {
+                            Ok(ExpResult::Int(v))
+                        },
+                        _ => unreachable!()
+                    }
+                }
+            }
     }
 }
 
@@ -65,10 +83,10 @@ impl<'ast> GenerateIR<'ast> for Exp {
 
 
 impl<'ast> GenerateIR<'ast> for ConstExp {
-    type Out = ExpResult;
+    type Out = i32;
     fn generate(&'ast self, scopes : &mut Scopes<'ast>) 
         -> IResult<Self::Out> {
-        self.exp.generate(scopes)
+        self.exp.calculate(scopes)
     }
 }
 
@@ -271,93 +289,7 @@ impl<'ast> $trait_name<'ast> for [<$cur Exp>]  {
 
                 scopes.function_push_inst(load_result);
                 Ok(ExpResult::Int(load_result))
-                /*
-                let mut zero: Option<Value> = None;
-                let mut one: Option<Value> = None;
-                let mut final_result: Option<Value> = None;
-                let mut binary_op: Option<BinaryOp> = None;
-                {
-                    let local_handler = LocalHandler::new(program, scopes);
 
-                    // zero and one
-                    zero = Some(local_handler.new_value().integer(0));
-                    one = Some(local_handler.new_value().integer(1));
-
-
-                    // choosee binary operator for land
-                    binary_op = Some(if stringify!($cur) == "LAnd" {
-                        BinaryOp::NotEq
-                    } else {
-                        BinaryOp::Eq
-                    });
-
-                    // generate a initial variable(global in this function) to store the result
-                    // for LAnd, lhs != 0 failed, the result is 0, and we go to end directly
-                    // for LOr,  lhs == 0 failed, the result is 1, and we go to end directly
-
-                    final_result = Some(local_handler.create_initial_variable(Type::get_i32(), None));
-
-                    let store = if stringify!($cur) == "LAnd" {
-                        local_handler.new_value().store(zero.unwrap(), final_result.unwrap())
-                    } else {
-                        local_handler.new_value().store(one.unwrap(), final_result.unwrap())
-                    };
-                    // 1.push the initial result in current block
-                    local_handler.push_inst(program, store);
-                }
-
-                
-                let lhs_result = lhs.generate(program, scopes)?;
-                
-                {
-                    let lhs_comp_result = cur_func!(scopes).new_value(program).binary(binary_op, zero, lhs_result);
-
-                    // 2.add compare result in current block
-                    cur_func!(scopes).push_inst(program, lhs_comp_result);
-
-
-                    // For LAnd and LOr
-                    // if lhs is true, we need to test rhs
-                    // or else we go to end block directly
-
-                    let next_block = cur_func!(scopes).create_new_block(program, Some(concat!("%", stringify!($cur), "_next").to_string()));
-                    let end_block = cur_func!(scopes).create_new_block(program, Some(concat!("%", stringify!($cur),"_end").to_string()));
-
-                    let br = cur_func!(scopes).new_value(program).branch(lhs_comp_result, next_block, end_block);
-                    // 3.add branch to the current block
-                    cur_func!(scopes).push_inst(program, br);
-                    
-                    // 4. add next_block, now next_block is current block
-                    cur_func!(scopes).add_new_block(program, next_block);
-                }
-                // 5. calculate right hand side and add instruction in next_block
-                let rhs_result = rhs.generate(program, scopes)?;
-
-                {
-                    let rhs_comp_result = cur_func!(scopes).new_value(program).binary(binary_op, zero, rhs_result);
-
-                    cur_func!(scopes).push_inst(program, rhs_comp_result);
-
-                    // 6. store the right hand result in final result
-
-                    let store_rhs = cur_func!(scopes).new_value(program).store(rhs_comp_result, final_result);
-
-                    cur_func!(scopes).push_inst(program, store_rhs);
-
-                    // 7. from next_block jump to the end block
-                    let jump_to_end = cur_func!(scopes).new_value(program).jump(end_block);
-
-                    cur_func!(scopes).push_inst(program, jump_to_end);
-
-                    // 8. add end_block as current block
-                    cur_func!(scopes).add_new_block(program, end_block);
-                }
-                /*// 9. load the final result
-                let load_result = cur_func!(scopes).new_value(program).load(final_result);
-
-                cur_func!(scopes).push_inst(program, load_result);*/
-                Ok(ExpResult::IntPtr(final_result.unwrap()))
-            */
             }
             
         }

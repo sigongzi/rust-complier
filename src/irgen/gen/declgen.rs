@@ -1,4 +1,5 @@
 use crate::ast::*;
+use crate::irgen::constcalc::PreCalculate;
 
 use koopa::ir::builder_traits::*;
 use koopa::ir::{Type};
@@ -35,17 +36,42 @@ impl<'ast> GenerateIR<'ast> for VarDef {
     type Out = ();
     fn generate(&'ast self, scopes : &mut Scopes<'ast>) 
         -> IResult<Self::Out> {
-        
-        let tar = scopes.create_initial_variable(Type::get_i32(), Some(&self.id));
-        scopes.add_variable_name(&self.id, tar);
-        match &self.init_val {
-            Some(e) => {
-                let res = e.generate(scopes)?.into_int(scopes)?;
-                let store = scopes.new_value().store(res, tar);
-                scopes.function_push_inst(store);
+        let value = match scopes.is_global() {
+            true => {
+                let alloc_val = 
+                match &self.init_val {
+                    Some(v) => {
+                        let res = v.exp.calculate(scopes)?;
+                        scopes.program.new_value().integer(res)
+                        
+                    },
+                    None => scopes.program.new_value().zero_init(Type::get_i32())
+                };
+                let v = scopes
+                .program
+                .new_value()
+                .global_alloc(
+                    alloc_val
+                );
+                scopes.program.set_value_name(v, Some(format!("@{}", self.id)));
+                v
             },
-            None => ()
-        }
+            false => {
+                let tar = scopes.create_initial_variable(Type::get_i32(), Some(&self.id));
+
+                match &self.init_val {
+                    Some(e) => {
+                        let res = e.generate(scopes)?.into_int(scopes)?;
+                        let store = scopes.new_value().store(res, tar);
+                        scopes.function_push_inst(store);
+                    },
+                    None => ()
+                }
+                tar
+            }
+        };
+        
+        scopes.add_variable_name(&self.id, value);
         Ok(())
     }
 }
@@ -73,19 +99,15 @@ impl<'ast> GenerateIR<'ast> for ConstDef {
     fn generate(&'ast self, scopes : &mut Scopes<'ast>) 
         -> IResult<Self::Out> {
         // a temporary method, treat const as variable
-        let tar = scopes.create_initial_variable(Type::get_i32(), Some(&self.id));
-        scopes.add_variable_name(&self.id, tar);
-        let res = self.init_val.generate(scopes)?.into_int(scopes)?;
-        let store = scopes.new_value().store(res, tar);
-
-        scopes.function_push_inst(store);
+        let v = self.init_val.generate(scopes)?;
+        scopes.add_const_value_name(self.id.as_str(), v);
         Ok(())
     }
 }
 
 // generate IR for const val
 impl<'ast> GenerateIR<'ast> for ConstInitVal {
-    type Out = ExpResult;
+    type Out = i32;
     fn generate(&'ast self, scopes : &mut Scopes<'ast>) 
         -> IResult<Self::Out> {
         self.exp.generate(scopes)

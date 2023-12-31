@@ -17,8 +17,13 @@ match {
 
 
 // Full program
-pub CompUnit: CompUnit = <func_def : (FuncDef)* > => CompUnit { <> };
+pub CompUnit: CompUnit = <comp_defs : (CompDef)* > => CompUnit { <> };
 
+
+CompDef: CompDef = {
+  FuncDef => CompDef::FuncDef(<>),
+  Decl => CompDef::Decl(<>)
+}
 
 // Declare variable or const
 Decl : Decl = {
@@ -26,15 +31,14 @@ Decl : Decl = {
   VarDecl => Decl::Var(<>)
 }
 
-BType : String = "int" => <>.to_string();
 
-ConstDecl : ConstDecl = "const" BType <def : ConstDef> <mut defs : ("," <ConstDef>)*> ";"=> {
+ConstDecl : ConstDecl = "const" "int" <def : ConstDef> <mut defs : ("," <ConstDef>)*> ";"=> {
   defs.insert(0, def);
   ConstDecl{defs}
 };
 
-// VarDecl       ::= BType VarDef {"," VarDef} ";";
-VarDecl : VarDecl = BType <def : VarDef> <mut defs : ("," <VarDef>)*> ";" => {
+// VarDecl       ::= "int" VarDef {"," VarDef} ";";
+VarDecl : VarDecl = "int" <def : VarDef> <mut defs : ("," <VarDef>)*> ";" => {
   defs.insert(0, def);
   VarDecl{defs}
 };
@@ -58,27 +62,28 @@ InitVal : InitVal = <exp : Exp> => InitVal {<>};
 
 // Function Define , Parameter and Type
 FuncFParam : FuncFParam = {
-  BType <id: Ident> => {
+  "int" <id: Ident> => {
     FuncFParam { <> }
   }
 }
 
 
 FuncDef: FuncDef = {
-  <ty: FuncType> <ident : Ident> "(" ")" <block : Block> => {
-    FuncDef {ty , ident , params : Vec::new(), block}
+  <head : FuncDefHead> ")" <block : Block> => {
+    FuncDef {ty : head.0 , ident: head.1 , params : Vec::new(), block}
   },
-  <ty: FuncType> <ident : Ident> "("
+  <head : FuncDefHead>
     <func_param : FuncFParam> <mut func_params : ("," <FuncFParam>)*>
   ")" <block: Block> => {
     func_params.insert(0, func_param);
-    FuncDef {ty , ident, params : func_params, block}
+    FuncDef {ty: head.0 , ident: head.1 , params : func_params, block}
   }
 }
 
-FuncType: FuncType = {
-  "int" => FuncType::Int,
-  "void" => FuncType::Void
+
+FuncDefHead : (FuncType, String) = {
+  "int" <id: Ident> "(" => (FuncType::Int, id),
+  "void" <id: Ident> "(" => (FuncType::Void, id)
 }
 
 // Block 

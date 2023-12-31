@@ -4,6 +4,8 @@ mod declgen;
 mod stmtgen;
 mod funcgen;
 
+
+pub use expgen::ExpResult;
 use crate::ast::*;
 
 use koopa::ir::{Type};
@@ -36,13 +38,40 @@ impl<'ast> GenerateIR<'ast> for CompUnit {
         scopes.decl_func("starttime", vec![], Type::get_unit());
 
         scopes.decl_func("stoptime", vec![], Type::get_unit());
-        
-        for func in &self.func_def {
-            func.function_generate_forepart(scopes)?;
-        }
-        for func in &self.func_def {
-            func.generate(scopes)?;
-        }
+        println!("the length of compdefs {}",self.comp_defs.len());
+        self.comp_defs
+        .iter()
+        .try_for_each(|s| match s {
+                CompDef::FuncDef(f) => {
+                    //println!("generate function {}",f.ident);
+                    f.function_generate_forepart(scopes)
+                },
+                _ => Ok(())
+            }
+        )?;
+        // global level
+        scopes.add_level();
+
+        // generate all variable first
+        let _ = self.comp_defs
+        .iter()
+        .try_for_each(|s| match s {
+            CompDef::Decl(d) => {
+                d.generate(scopes)
+            },
+            _ => Ok(())
+        })?;
+
+        self.comp_defs
+        .iter()
+        .try_for_each(|s| match s {
+            CompDef::FuncDef(f) => {
+                f.generate(scopes)
+            },
+            _ => Ok(())
+        })?;
+
+        scopes.minus_level();
         Ok(())
     }
 }

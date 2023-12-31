@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use koopa::ir::{Program, BasicBlock, Value, entities::ValueData, Function};
 use super::{func::{FunctionHandler,FuncVar}, CResult};
 
@@ -8,9 +10,10 @@ macro_rules! function_handler {
     };
 }
 pub struct ProgramContext<'p> {
-    program: &'p Program,
+    pub program: &'p Program,
     pub cur_func : Option<FunctionHandler>,
     pub func : Option<Function>,
+    pub global_var : HashMap<Value, String>,
     function_cnt : usize,
 }
 
@@ -21,11 +24,20 @@ impl<'p> ProgramContext<'p> {
             program, 
             cur_func: None,
             func : None,
+            global_var : HashMap::new(),
             function_cnt : 0
         }
     }
     pub fn program(&'p self) -> &'p Program {
         self.program
+    }
+
+    pub fn add_global_var(&mut self, value : Value, name: &str) {
+        self.global_var.insert(value, name.into());
+    }
+    
+    pub fn search_global_var(&mut self, value: &Value) -> Option<&str> {
+        self.global_var.get(value).map(|x| x.as_str())
     }
 
     /// get function handler

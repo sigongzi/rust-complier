@@ -66,6 +66,12 @@ impl AsmWriter {
     }
 
     pub fn load(&self, f: &mut File, context: &mut ProgramContext, value : &Value, tmp: &str) -> CResult<()> {
+        if let Some(v) = context.search_global_var(value) {
+            writeln!(f, "{SPACE}la {}, {}", tmp, v);
+            writeln!(f, "{SPACE}lw {}, 0({})", tmp, tmp);
+            return Ok(());
+        }
+        
         match context.get_value_data(value).kind() {
             ValueKind::Integer(v) => {
                 writeln!(f,"{SPACE}li {}, {}", tmp, v.value())?;
@@ -85,6 +91,11 @@ impl AsmWriter {
         Ok(())
     }
     pub fn store(&self, f: &mut File, context: &mut ProgramContext, value : &Value, tmp: &str) -> CResult<()> {
+        if let Some(v) = context.search_global_var(value) {
+            writeln!(f, "la t3, {}",  v);
+            writeln!(f, "sw {}, 0(t3)", tmp);
+            return Ok(());
+        }
         let pos = context.get_value_position(value)?;
         match pos {
             FuncVar::Stack(p) => {

@@ -9,26 +9,8 @@ use crate::codegen::CResult;
 #[allow(unused_imports)]
 use super::GenerateAsm;
 use std::fs::File;
+use std::io::Write;
 
-
-
-/*
-impl GenerateAsm for Return {
-    type Out = ();
-    fn generate_asm(&self, f : &mut File, handler : &mut ProgramContext) -> crate::codegen::Result<Self::Out> {
-        match self.value() {
-            Some(v) => {
-
-                writeln!(f,"  li a0, {}", 0)?;
-            }
-            None => ()
-        };
-        
-        writeln!(f,"  ret")?;
-        Ok(())
-    }
-}
-*/
 
 pub trait GenerateAsmValue<'p> {
     type Out;
@@ -45,6 +27,7 @@ impl<'p> GenerateAsmValue<'p> for ValueData {
             ValueKind::Branch(v) => v.generate_asm(f, context, value),
             ValueKind::Binary(v) => v.generate_asm(f, context, value),
             ValueKind::Call(v) => v.generate_asm(f, context, value),
+            ValueKind::GlobalAlloc(v) => v.generate_asm(f, context, value),
             /*
             
             ValueKind::Binary(v) => v.generate(f, info, self),
@@ -56,7 +39,22 @@ impl<'p> GenerateAsmValue<'p> for ValueData {
     }
 }
 
+impl<'p> GenerateAsmValue<'p> for GlobalAlloc {
+    type Out = ();
+    fn generate_asm(&self, f : &'p mut File, context : &'p mut ProgramContext, _value : &Value) -> CResult<Self::Out> {
+        match context.program.borrow_value(self.init()).kind() {
+            ValueKind::Integer(a) => {
+                writeln!(f, "  .word {}", a.value())?;
+            },
+            ValueKind::ZeroInit(_z) => {
+                writeln!(f, "  .zero 4")?;
+            },
+            _ => unreachable!()
+        };
 
+        Ok(())
+    }
+}
 
 impl<'p> GenerateAsmValue<'p> for Jump {
     type Out = ();

@@ -5,14 +5,18 @@ pub use stmt::{*};
 pub use exp::{*};
 pub use decl::{*};
 // AST for CompUnit
-/// CompUnit  ::= FuncDef;
+/// CompUnit ::= [CompUnit] (Decl | FuncDef);
 #[derive(Debug)]
 pub struct CompUnit {
-    pub func_def: Vec<FuncDef>,
+    pub comp_defs: Vec<CompDef>,
 }
 
 
-
+#[derive(Debug)]
+pub enum CompDef {
+    FuncDef(FuncDef),
+    Decl(Decl)
+}
 
 /// FuncDef   ::= FuncType IDENT "(" [FuncFParams] ")" Block;
 
